@@ -1,0 +1,144 @@
+# useage:   bash test_runs [1] [2] [3] [4] [5]
+# 
+# with no args, all test problems are run
+# with args, only those test problems listed on the command line are run
+#
+
+root=sbchk                      # root name of output file
+
+if [ $# -eq 0 ] ; then 
+  do1=1; do2=1; do3=1; do4=1; do5=1
+else
+  for i in $@; do 
+    case $i in
+    1) do1=1;;  
+    2) do2=2;;
+    3) do3=3;;
+    4) do4=4;;
+    5) do5=5;;
+    esac
+  done
+fi
+
+############################################################
+# Example 1: SW spectral irradiance
+############################################################
+
+if [ $do1 ] ; then
+rm -f $root.1
+echo "
+ &INPUT
+    idatm=4,   isat=0, wlinf=.25, wlsup=1.0, wlinc=.005, iout=1,
+ /" > INPUT
+echo running example 1
+sbdart > $root.1
+fi
+
+############################################################
+# Example 2: vary optical depth and surface albedo
+############################################################
+#
+if [ $do2 ] ; then 
+rm -f $root.2
+
+echo running example 2 
+for albcon in 0 .2 .4 .6 .8 1    ; do 
+for tcloud in 0 1 2 4 8 16 32 64 ; do 
+echo "
+ &INPUT
+ tcloud=$tcloud
+ albcon=$albcon
+ idatm=4
+ isat=0
+ wlinf=.55
+ wlsup=.55
+ isalb=0
+ iout=10
+ sza=30
+ /" > INPUT
+sbdart >> $root.2
+done
+done
+fi
+
+############################################################
+# Example 3: spectral output in thermal IR 
+############################################################
+
+if [ $do3 ] ; then
+rm -f $root.3
+echo running example 3
+
+for tcloud in 0 1 5 ; do
+echo "
+ &INPUT
+  tcloud=$tcloud
+  zcloud=8
+  nre=10
+  idatm=4
+  sza=95
+  wlinf=4
+  wlsup=20
+  wlinc=-.01
+  iout=1
+ /" > INPUT
+
+sbdart >> $root.3
+
+done
+fi
+
+#########################################################################
+# Example 4: demonstration of Nakajima and King
+#########################################################################
+if [ $do4 ] ; then
+rm -f $root.4
+echo running example 4
+
+for tcloud in 0 1 2 4 8 16 32 64 128 ; do
+for nre in 2 4 8 16 32 64 128 ; do 
+for wl in .55 2.16 ; do 
+echo "
+ &INPUT
+ tcloud=$tcloud
+ nre=$nre
+ wlinf=$wl
+ wlsup=$wl
+ idatm=1
+ isat=0
+ isalb=6
+ iout=10
+ sza=0
+ /" > INPUT
+ sbdart >> $root.4
+done
+done
+done
+fi
+
+#########################################################################
+# Example 5: Radiance at surface and TOA
+#########################################################################
+if [ $do5 ] ; then
+rm -f $root.5
+echo running example 5
+
+for tcloud in 5 15 ; do 
+echo "
+ &INPUT 
+  tcloud= $tcloud
+  zcloud= 1
+  wlinf=.72
+  wlsup=.72
+  idatm=1
+  isalb=4
+  sza=60
+  iout=21
+  nstr=20
+  uzen=5,15,25,35,45,55,65,75,85,95,105,115,125,135,145,155,165,175
+  phi=0,15,30,45,60,75,90,105,120,135,150,165,180
+ /" > INPUT
+
+sbdart >> $root.5
+done
+fi
