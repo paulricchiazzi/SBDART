@@ -4,4 +4,4 @@ SBDART (Santa Barbara DISORT Atmospheric Radiative Transfer) is a FORTRAN comput
 
 Installation
 
-SBDART is written entirely in FORTRAN. I have successfully compiled the code both on OSX and on Windows7 using the gfortran compiler using a switch to enforce FORTRAN 2003 compliance.  The makefile included in repository works on UNIX-like operating systems.  If you'ld like to use the makefile on Windows, you'll need to install something like Cygwin to make it work.
+SBDART is written entirely in FORTRAN. I have successfully compiled the code both on OSX and on Windows7 using the gfortran compiler using a switch to enforce FORTRAN 2003 compliance.  The makefile included in the repository works on UNIX-like operating systems.  If you'ld like to use the makefile on Windows, you'll need to install something like Cygwin to make it work.
