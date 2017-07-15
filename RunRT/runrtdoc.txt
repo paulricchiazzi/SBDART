@@ -1,0 +1,306 @@
+        INTRODUCTION
+
+SBDART is designed to compute a wide range of plane-parallel radiative transfer
+problems in the Earth's atmosphere.  The Earth's radiation budget is affected by
+changes in gas mixing ratios, surface reflectance, aerosols or liquid water
+distribution (clouds). The RunRT graphical user interface is designed to make it
+easy to assess this sensitivity.
+
+The RunRT interface is quite simple yet flexible enough to perform most of the
+computational problems that come up in climate science or remote sensing.  There
+are four entry boxes at the top of the RunRT user interface.  The first entry
+widget is used to select an SBDART input parameter, while the remaining 4 boxes
+are used to specify a range of variation and number of samples.
+
+    AN EXAMPLE WITH INTEGRATED FLUX OUTPUT (IOUT=10)
+
+When RunRT starts up, the "RT parm" entry widget is initialized with "TCLOUD",
+an SBDART input parameter that specifies cloud optical depth.  This parameter
+was chosen as the default because it has large effect on the radiation budget.
+Next to the "RT parm" selection box is a text field that gives a short
+description of the RT parameter.  The "Start" and "End" boxes show a physically
+reasonable range of values for cloud optical depth.  The "Num" entry box
+specifies the number of samples between the "Start" and "End" values.  Finally,
+the "Skew" parameter is used to bias the sample distribution toward smaller values.
+(Skew=0 corresponds to a logarithmic distribution, while skew=1 yields a linearly
+spaced distribution). The values displayed in the "Start", and "End" boxes may be
+changed either by direct edits or by rolling the mouse wheel.  Immediately below
+the entry widgets is a wide text box that shows a preview of a potential RunRT
+sequence command.  On startup this widget contains the text
+
+TCLOUD=0;10;20;30;40;50;60;70;80;90;100
+
+Note that this sequence of optical depth values is consistent with the values of
+start and ending values and the number samples.
+
+Now we'll complete a simple input sequence to show how these widgets are used to
+generate a sequence of SBDART runs.  First, place the mouse cursor in the "End"
+entry widget.  Roll the mouse wheel up and down, and notice how the preview
+command is changed to match the new "End" value. Set the "End" value to 90. The
+"Start" value may be changed in a similar way. Now move the mouse to the "Num"
+entry box and increase the number of sample points to 10 using the same mouse
+wheel technique. 
+
+Finally, by pressing the "Add" button, the preview command string is copied to
+the end of command entry box, located under the graph. If a parameter of the
+same name had already been present in the command entry box, pressing the "Add"
+button would have replaced it with the version shown in the preview command
+string.  If the "Add" button is pressed with the middle mouse button, all
+contents of the command entry box are erased before adding the preview command.
+This is a handy way to start over on a completely new calculation.
+
+The command entry box can be thought of as a staging area to assemble the RunRT
+command sequence. After a user becomes familiar with the RunRT command sequence,
+it is sometimes convenient to directly edit the commands in the command entry
+box.  But for now we'll focus on commands generated on the preview line and
+added to the command entry box using the "Add" button.
+
+Next, move the mouse to the the "RT parm" entry box. With focus in the widget,
+roll the mouse wheel up and down, and notice how the RT parameter switches to
+different SBDART input variables.  Each time the selection switches to a new RT
+parameter, the description, "Start", and "End" values change accordingly.  The
+sequence of values of the RT parameter is also previewed in a text box
+immediately below the entry boxes.  Roll the mouse wheel up until parameter SZA
+is shown (The RT parameters are listed in alphabetic order).  At this point the
+preview box should show the 10 values of solar zenith angle from 0 to 80
+degrees.  Put the mouse in the Num entry box and set the number of samples to 9.
+Press the "Add" button to copy the preview command to the command box.  Press
+the "Run" button to execute this command sequence.
+
+At this point the command entry box should look like,
+
+# Description: 
+#
+TCLOUD=0;10;20;30;40;50;60;70;80;90
+SZA=0;10;20;30;40;50;60;70;80
+
+The first two lines are comment fields that can be changed as desired to provide
+descriptive information.  The lines that don't start with the "#" are the active
+commands that cause SBDART to compute integrated radiative quantities at the
+surface and top of the atmosphere for a range of cloud optical depth and solar
+zenith angle, with the first parameter (TCLOUD) varying in the inner most loop.
+The type of output generated in this example is specific to the IOUT=10, the
+default output format.  All the IOUT output formats that may be used with RunRT
+are listed here:
+
+    IOUT=1          Spectral profile plots
+    IOUT=10         Spectrally integrated fluxes at top and bottom of atmosphere
+    IOUT=11         Vertical profiles of wavelength integrated flux
+    IOUT=20 or 21   Radiance contour plots
+
+Examples of the other plot types will be shown below. But for now we will continue
+with the integrated flux example.
+
+Taking a look at the plot generated by our first trial run, note that all values
+of SZA are shown in the plot. If this seems too cluttered, some of the SZA plot
+lines can be removed by unselecting them in the "Plot lines" menu. With IOUT=10,
+SBDART computes upward and downward integrated flux, at the surface and the top
+of the atmosphere. Initially, the BOTDN flux is selected for plotting.  Other
+plot quantities may be overlayed by selecting them in the "RT Quants" menu. 
+
+Before leaving this example lets see if we can improve the plot. Note that our
+initial run shows abrupt changes in flux at the lower end of the optical depth
+scale.  Evidently, a jump from TCLOUD=0 to TCLOUD=10 is too large to produce a
+smooth plot.  Lets fix this by visiting the "Skew" input box and setting the
+skew value to 0.3 using the mouse wheel.  This value of skew puts more samples
+of cloud optical depth in the range where there is greatest sensitivity to its
+variation.  Press the "Add" button, and note that the previous TCLOUD parameter
+sequence has been replaced in the command entry box.  Finally, press "Run", wait
+a moment, and notice that the plots are better resolved near TCLOUD=0.
+
+At this point we can save this calculation to a named file by visiting the
+"File" menu and selecting "Save." The file will be saved with a file suffix,
+'.sbd' in the RUNS folder (the RUNS folder is located RunRT working directory).
+Archived runs may be read back into RunRT by selecting File -> Open.
+
+We could also extend this calculation by adding another RT parameter
+variant.  For example, visit "RT parm" and select "ALBCON." Set the number of
+samples to 11, press "Add", and then "Run."  Again, RunRT shows plot output for
+all values of SZA, but now the effect of changing surface albedo can be assessed
+by visiting the newly created spinbox, which shows different values of ALBCON.
+Rolling the mouse wheel up and down shows computed results with different values
+of surface albedo.
+
+This sequence of commands made cloud optical depth the inner most do-loop
+variable.  The next most rapid variation was in SZA.  Surface albedo was the
+outer-most loop variable.  With the IOUT=10 output format the variable that
+varies in the inner loop is always treated as the dependent variable in the plot
+(x-axis).  All values of the next most rapidly changing parameter is overlayed
+on the plot.  Parameters that vary in the 3rd and higher nested loops are
+selected through spinboxes.
+
+It is, however, possible to overlay all values of any looped variable on the
+same plot.  For example, in our previous example, we may want to compare
+radiative output for all values of surface albedo at a fixed value of solar
+zenith angle. This can be accomplished by clicking in the spinbox with the right
+mouse button.  This action puts ALBCON variation in the "Plot lines" menu and
+SZA variation in the spinbox.  Now rolling in the spinbox changes values of SZA,
+and shows all values of ALBCON in the plot.  Another right mouse button click in
+the spinbox switches back to the original configuration. This capablilty is
+extended to any number of nested RT parameters.  For IOUT=10, N nested RT
+parameter variants results in N-2 spinboxes.
+
+        AN EXAMPLE SHOWING SPECTRAL OUTPUT (IOUT=1)
+
+To execute a new scenario two options are available: either edit the displayed
+command sequence as desired, or erase the contents of the command box by adding
+the first new command using a middle mouse button click on the "Add" button.
+Lets proceed using this later approach.  
+
+For the next example, we'll compute the spectral radiant flux leaving the top of
+the atmosphere in the infrared, with goal of determining how variations in CO2
+mixing ratio and water vapor content affects the radiative energy budget. Use
+the techniques described above to put the following commands in the command box:
+
+XCO2=280;400;560
+UW=1;2.5;5
+WLINF=6
+WLSUP=16
+WLINC=5
+IOUT=1
+
+An easier way to accomplish this would have been to copy the commands listed
+above directly into the command box.  This could be done using the copy and
+paste commands appropriate to your operating system (e.g., COMMAND-C and
+COMMAND-V on OSX).  After the command box is populated as indicated above, press
+"Run". This computation shows the surface flux for CO2 mixing ratios
+representative of pre-industrial levels, current levels, and twice the
+pre-industrial levels of CO2.  It also shows the effect of dry, average and very
+moist atmospheric water vapor content.  Note, in runs that use the IOUT=1 output
+format, the x-variable is always wavelength (or wavenumber). For this run, the
+spinbox shows different values of the percipitable water vapor.
+
+      AN EXAMPLE SHOWING VERTICAL RADIANT FLUX PROFILES (IOUT=11)
+
+For this example, we'll compute the vertical profile of radiant flux in the
+infrared. We'd like to see where the CO2 and relative humidity variation affects
+the vertical profile using the same set of RT parameters defined in the previous
+example.  The only change required is to set IOUT=11 in the previous command
+sequence. In this case the dependent variable is the height in the atmosphere
+which is shown along the vertical y-axis.  
+
+      A RADIANCE EXAMPLE (IOUT=21)
+
+Our final example will show how to produce radiance contour plots with
+SBDART. Set the command box as follows:
+
+TCLOUD=0;10
+WLINF=0.4;0.8
+WLSUP=0.4;0.8 &
+SZA=60
+IOUT=21
+
+Here we have introduce another useful feature of the RunRT command
+language -- the capability to specify variable RT parameters that
+change in lock-step with each other.  The ampersand attatched to the
+WLSUP parameter sequence indicates that WLSUP should vary with WLINF.
+So in this case calculations are performed for TCLOUD=0 and TCLOUD=10,
+and for (WLINF=WLSUP=0.4) and (WLINF=WLSUP=0.8).  It is important to
+remember that RT parameters that are intended to vary together should
+have exactly the same number of samples.  This calculation may be
+varied slightly to compute the radiance integrated over a band of
+wavelengths, say over 10 um bands centered at 0.45 and 0.85 um. The
+input commads for that calculation would look like:
+
+TCLOUD=0;10
+WLINF=0.4;0.8
+WLSUP=0.5;0.9 &
+SZA=60
+IOUT=21
+
+        OTHER INTERSTING FEATURES OF the RunRT USER INTERFACE
+
+1) Pressing cntrl-p with focus in the plot window will cause the visible plot
+   to be written to a PNG file in the same directory as .sbd output files.
+   The name of the plot will be derived from the run name associated with the
+   scenario.  If no run name has been set, the default run name of 'sbrt.sbd'
+   is used. (Run names are set when the RunRT scenario is saved.)
+
+2) With focus in the plot window the x and y plot range may be adjusted by
+   rolling the mouse wheel.    Rolling the mouse wheel to the left of y-axis
+   adjusts the y-axis scale. Mouse rolls below the x-axis adjusts the x-axis
+   scale. If the roll event occurs near the plot origin it adjusts the lower
+   limit of the plot.  If the roll event occurs near the max, it controls the
+   max extent of the axis.  The sense of the roll (either up or down) determines
+   whether the limit is increased or decreased.  The effect of the axis scaling
+   is removed by toggling the y-autorange checkbox.
+
+3) If SBDART fails to complete the full RunRT command sequence, the last
+   attempted RT command sequence is saved in a file RUNS/~runrt.sbd.  This file
+   is copied back into the command entry box by selecting File -> Recover
+
+4) In addition to the document you are now reading, the Help menu contains a
+   help file, rtdoc.txt, which documents SBDART input parameters.  If rtdoc is
+   visible in a pop-up window, it will move to the place in the documentation
+   that covers the RT parameter selected in the RT parm widget. Go ahead, try
+   changing the RT parm selection while the rtdoc popup is visible. (If you've
+   already popped up the rtdoc file and then killed the window, you may have to
+   change the RT parm selection before the rtdoc popup window will appear
+   again).
+
+5) With focus in the RT parm widget, you can quickly move to another RT parm by
+   entering the first few letters of the parameter and pressing RETURN.  For
+   example, typing 'al<return>' is quick way to switch to the ALBCON RT
+   parameter.
+
+6) Double clicking on one of the parameters listed in the command box will cause
+   that parameter to be selected in the RT parm widget.
+
+7) When assembling a command file that varies several RT parameters in lock-step
+   it is sometimes necessary to define a loop variable which is not itself
+   an RT variable interpretable by SBDART.  For example, suppose the goal is to
+   compute the thermal spectral profile for four cases:
+
+        1) No water vapor absorption, all other absorption nominal
+        2) No CO2 absorption, all other absorption nominal
+        3) No ozone absorption, all other absorption nominal
+        4) All absorption nominal
+
+   It would be tempting to write the command file as
+
+   UW=   0;-1;-1;-1
+   XCO2=-1; 0;-1;-1 &
+   UO3= -1;-1; 0;-1 &
+   WLINF=6
+   WLSUP=14
+   WLINC=5
+   IOUT=1
+
+   With this command sequence the SBDART runs would complete,  but RunRT would
+   choke while plotting the results. This is because the first variant, UW,
+   which is used as a dictionary key for selecting lines to plot, is non-varying
+   over the last three iterations (dictionary keys must be unique).  The solution
+   is to define a new loop variable that is not used in the SBDART input, but is
+   used by RunRT to disambiguate the loop sequence.  The new command sequence
+   looks like this:
+
+   _Abs=No H2O;No CO2;No O3;All
+   UW=    0; -1;-1;-1 &
+   XCO2= -1;  0;-1;-1 &
+   UO3=  -1; -1; 0;-1 &
+   WLINF=6
+   WLSUP=14
+   WLINC=5
+   IOUT=1
+
+   The psuedo variant, in this case _Abs, is composed of any string that starts
+   with a non-alphabetic character.  The values on the right of the equals sign
+   are any set of strings that describe the loop sequence.  The RHS strings ('No
+   H2O', 'No CO2', 'No O3', 'ALL') will show up in the line labels, but the
+   psuedo variant _Abs will not.
+
+8) Moving the mouse cursor near a plot line hilights the line both on the plot
+   and in the legend.  This is helpful when the color of plotted lines are hard
+   to distinguish.
+
+9) If the left mouse button is clicked while a plot line is hilighted, the data
+   for the line is displayed in a pop-up window. If desired, the data for that
+   line may be copied, and pasted into a spreadsheet like Excel.
+
+10)If the middle mouse button is clicked while a plot line is hilighted that plot
+   line will be used as a baseline for difference plots.  For example, using the
+   output from item 7, above, clicking on the line labeled 'All' will cause the
+   'No H2O', 'No CO2' and 'No O3' lines to be plotted with the 'All' line
+   subtracted point-by-point from each. Normal non-difference plots are recovered
+   by pressing cntrl-c (If this doesn't work on the first try, move the cursor
+   away from any lines, press the left mouse button, then press cntrl-c).
