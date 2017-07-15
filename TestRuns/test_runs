@@ -3,6 +3,8 @@
 # with no args, all test problems are run
 # with args, only those test problems listed on the command line are run
 #
+# Compare your SBDART results with the sbchk files provided in this folder 
+#
 
 root=sbchk                      # root name of output file
 
