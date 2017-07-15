@@ -71,9 +71,9 @@ class RunRT:
         self.optionmenu.add_radiobutton(label='Hourly irradiance (fine)', variable=self.optionvalue, value=2, command=self.SetupHourlyPlace)
         self.optionmenu.add_radiobutton(label='Daily fluence', variable=self.optionvalue, value=3, command=self.SetupDailyLat)
         self.optionComparisonPlot = IntVar(0)
-        self.optionmenu.add_radiobutton(label='No Comparison', variable = self.optionComparisonPlot, value=1, command = self.Plotit)
+        self.optionmenu.add_radiobutton(label='No Comparison', variable = self.optionComparisonPlot, value=0, command = self.Plotit)
         self.optionmenu.add_radiobutton(label='Difference Plot', variable = self.optionComparisonPlot, value=1, command = self.Plotit)
-        self.optionmenu.add_radiobutton(label='Ratio Plot', variable = self.optionComparisonPlot, value=1,command = self.Plotit)
+        self.optionmenu.add_radiobutton(label='Ratio Plot', variable = self.optionComparisonPlot, value=2,command = self.Plotit)
         self.menubar.add_cascade(label="Options", menu=self.optionmenu)
 
         # select plot groups
@@ -850,6 +850,12 @@ class RunRT:
             return False
 
     def Plotit(self):
+
+        if not self.diffbase and self.optionComparisonPlot.get() > 0:
+            self.optionComparisonPlot.set(0)
+            self.Popup(self.framegraph,"No comparison base set")
+            return
+
         if self.parser.IOUT in (20,21):
             self.Plotit20()
         elif self.parser.IOUT == 11:
@@ -870,7 +876,7 @@ class RunRT:
 
         color =''
         plottitle=''
-        basequant = self.diffbase
+        basequant = self.diffbase if self.optionComparisonPlot.get() else ''
         for pkey in pdict.keys():
             color = pdict[pkey][0]
             marker = pdict[pkey][1]
@@ -894,7 +900,11 @@ class RunRT:
                     bkey = pkey.replace(diffquant, basequant)
                     plottitle = "Difference from {}  {}".format(basequant, plottitle)
                     if self.goodkey(bkey):
-                        y = [a-b for a,b in zip(y,self.yvariable[bkey][:])]
+                        if self.optionComparisonPlot.get() == 1:
+                            y = [a-b for a,b in zip(y,self.yvariable[bkey][:])]
+                        elif self.optionComparisonPlot.get() == 2:
+                            y = [a/b for a,b in zip(y,self.yvariable[bkey][:])]
+                            ylabel = 'Ratio'
             else:
                 return
 
@@ -972,7 +982,7 @@ class RunRT:
             xlabel = 'Latitude (deg)'
             #plottitle = 'Solar Flux for {}'.format(date)
 
-        basequant = self.diffbase
+        basequant = basequant = self.diffbase if self.optionComparisonPlot.get() else ''
         for pkey in pdict.keys():
             color = pdict[pkey][0]
             marker = pdict[pkey][1]
@@ -1003,7 +1013,11 @@ class RunRT:
                     if self.goodkey(bkey):
                         yb = np.array(self.yvariable[bkey])
                         yb = solfac*(yb[isza]*(1-wt)+yb[iszap]*wt)
-                        y -= yb
+                        if self.optionComparisonPlot.get() == 1:
+                            y -= yb
+                        elif self.optionComparisonPlot.get() == 2:
+                            y /= yb
+                            ylabel = 'Ratio'
 
                 if intensity:
                     ylabel=self.parser.IntensityLabel(ylabel)
@@ -1035,6 +1049,123 @@ class RunRT:
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
         self.canvas.show()
+
+    def Plotit11(self):
+        self.ClearPlot()
+        self.MakeAx('xy')
+        pdict = self.GetPlotSequence()
+
+        plottitle = ""
+
+        if len(pdict.keys()) == 0:
+            return
+
+        basequant = basequant = self.diffbase if self.optionComparisonPlot.get() else ''
+        for pkey in pdict.keys():
+            color = pdict[pkey][0]
+            marker = pdict[pkey][1]
+            linelabel = self.GetLinelabel(pdict[pkey][2])
+            plottitle = pdict[pkey][3]
+            rtkey=pkey.split()[0]
+            phikey = pkey.replace(rtkey, "FFEW")
+            zkey=pkey.replace(rtkey, "ZZ")
+            ylabel = "Altitude (km)"
+            xlabel = self.parser.rtunits[rtkey]
+            intensity = self.parser.menucheck[" Intensity"].get()
+            if self.goodkey(zkey) and self.goodkey(pkey):
+                y = self.yvariable[zkey]
+                x = self.yvariable[pkey][:]
+
+                if basequant:
+                    diffquant = linelabel[linelabel.find(' ')+1:]
+                    if basequant == diffquant: continue
+                    plottitle = "Difference from {}  {}".format(basequant, plottitle)
+                    diffquant=diffquant.replace(' ','_')
+                    basequant=basequant.replace(' ','_')
+                    bkey = pkey.replace(diffquant,basequant)
+                    if self.goodkey(bkey):
+                        if self.optionComparisonPlot.get() == 1:
+                            x = [a-b for a,b in zip(x,self.yvariable[bkey][:])]
+                        elif self.optionComparisonPlot.get() == 2:
+                            x = [a/b for a,b in zip(x,self.yvariable[bkey][:])]
+                            xlabel = 'Ratio'
+
+                    else:
+                        return
+
+                if intensity:
+                    xlabel=self.parser.IntensityLabel(xlabel)
+                    for i in range(0, len(y)):
+                        ffew = self.yvariable[phikey][i]
+                        x[i] /= ffew
+                self.ax.plot(x, y, color=color, marker=marker, label=linelabel, markersize=3, picker=5)
+                self.yrange = self.SetRange(x, self.yrange)
+            else:
+                return
+
+        if self.yautoscale.get():
+            self.plotwindow=[]
+            self.yrange = [float('inf'), float('-inf')]
+        else:
+            if self.plotwindow:
+                self.ZoomAxis()
+            else:
+                self.ax.set_xlim(self.yrange)
+
+        self.ShowLegend(len(pdict.keys()))
+        self.ax.set_title(plottitle)
+        self.ax.set_xlabel(xlabel)
+        self.ax.set_ylabel(ylabel)
+        self.canvas.show()
+
+    def Plotit20(self):
+        azimuths=np.radians(self.parser.phi)
+        zeniths = np.array(self.parser.zen)
+        theta,phi=np.meshgrid(zeniths, azimuths)
+        pdict = self.GetPlotSequence()
+        values=[]
+        self.ClearPlot()
+        intensity = self.parser.menucheck[" Intensity"].get()
+        if self.yautoscale.get():
+            self.colorbarzoom=[]
+
+        for pkey in pdict.keys():
+            klist = pkey.split()
+            rtparms = " ".join(klist[1:])
+            rtkey = klist[0]
+            if self.goodkey(rtkey, self.parser.rtunits):
+                radkey = "RADIANCE {}".format(rtparms)
+                units=self.parser.rtunits[rtkey]
+                if self.goodkey(radkey) and self.goodkey(pkey):
+                    values=np.array(self.yvariable[radkey])
+                    label="{}  ({})".format(rtkey.capitalize(),self.parser.rtunits[rtkey])
+                    if rtkey != "RADIANCE":
+                        values /= self.yvariable[pkey]
+                        label="Radiance/{}  ({})".format(rtkey.capitalize(),self.parser.rtunits[rtkey])
+                else:
+                    return
+                if intensity and rtkey == "RADIANCE":
+                    label = self.parser.IntensityLabel(label)
+                    ewkey = pkey.replace(rtkey, "FFEW")
+                    ew=self.yvariable[ewkey]
+                    values = values/ew
+                self.MakeAx("polar")
+                self.ax.set_theta_offset(np.pi/2)
+                self.ax.set_theta_direction(-1)
+                if self.colorbarzoom:
+                    vmin, vmax = self.colorbarzoom
+                    if vmin == 0 and vmax == 0:
+                        self.colorbarzoom = [values.min(), values.max()]
+                    else:
+                        values = values.clip(min=vmin,max=vmax)
+                cp=self.ax.contourf(phi, theta, values,20)
+                self.fig.colorbar(cp, ax=self.ax, orientation='vertical',pad=0.1,label=label)
+                #self.fig.tight_layout(rect=[0.01,0.01,0.9,0.99])
+                self.canvas.show()
+            else:
+                return
+
+
 
     def SetupEphemHours(self, x):
         '''
@@ -1113,116 +1244,6 @@ class RunRT:
             if op.startswith('day'):
                 day = int(op.split('=')[1])
         return day, lat, lon
-
-    def Plotit11(self):
-        self.ClearPlot()
-        self.MakeAx('xy')
-        pdict = self.GetPlotSequence()
-
-        plottitle = ""
-
-        if len(pdict.keys()) == 0:
-            return
-
-        basequant = self.diffbase
-        for pkey in pdict.keys():
-            color = pdict[pkey][0]
-            marker = pdict[pkey][1]
-            linelabel = self.GetLinelabel(pdict[pkey][2])
-            plottitle = pdict[pkey][3]
-            rtkey=pkey.split()[0]
-            phikey = pkey.replace(rtkey, "FFEW")
-            zkey=pkey.replace(rtkey, "ZZ")
-            ylabel = "Altitude (km)"
-            xlabel = self.parser.rtunits[rtkey]
-            intensity = self.parser.menucheck[" Intensity"].get()
-            if self.goodkey(zkey) and self.goodkey(pkey):
-                y = self.yvariable[zkey]
-                x = self.yvariable[pkey][:]
-
-                if basequant:
-                    diffquant = linelabel[linelabel.find(' ')+1:]
-                    if basequant == diffquant: continue
-                    plottitle = "Difference from {}  {}".format(basequant, plottitle)
-                    diffquant=diffquant.replace(' ','_')
-                    basequant=basequant.replace(' ','_')
-                    bkey = pkey.replace(diffquant,basequant)
-                    if self.goodkey(bkey):
-                        x = [a-b for a,b in zip(x,self.yvariable[bkey][:])]
-                    else:
-                        return
-
-                if intensity:
-                    xlabel=self.parser.IntensityLabel(xlabel)
-                    for i in range(0, len(y)):
-                        ffew = self.yvariable[phikey][i]
-                        x[i] /= ffew
-                self.ax.plot(x, y, color=color, marker=marker, label=linelabel, markersize=3, picker=5)
-                self.yrange = self.SetRange(x, self.yrange)
-            else:
-                return
-
-        if self.yautoscale.get():
-            self.plotwindow=[]
-            self.yrange = [float('inf'), float('-inf')]
-        else:
-            if self.plotwindow:
-                self.ZoomAxis()
-            else:
-                self.ax.set_xlim(self.yrange)
-
-        self.ShowLegend(len(pdict.keys()))
-        self.ax.set_title(plottitle)
-        self.ax.set_xlabel(xlabel)
-        self.ax.set_ylabel(ylabel)
-        self.canvas.show()
-
-    def Plotit20(self):
-        azimuths=np.radians(self.parser.phi)
-        zeniths = np.array(self.parser.zen)
-        theta,phi=np.meshgrid(zeniths, azimuths)
-        pdict = self.GetPlotSequence()
-        values=[]
-        self.ClearPlot()
-        intensity = self.parser.menucheck[" Intensity"].get()
-        if self.yautoscale.get():
-            self.colorbarzoom=[]
-
-        for pkey in pdict.keys():
-            klist = pkey.split()
-            rtparms = " ".join(klist[1:])
-            rtkey = klist[0]
-            if self.goodkey(rtkey, self.parser.rtunits):
-                radkey = "RADIANCE {}".format(rtparms)
-                units=self.parser.rtunits[rtkey]
-                if self.goodkey(radkey) and self.goodkey(pkey):
-                    values=np.array(self.yvariable[radkey])
-                    label="{}  ({})".format(rtkey.capitalize(),self.parser.rtunits[rtkey])
-                    if rtkey != "RADIANCE":
-                        values /= self.yvariable[pkey]
-                        label="Radiance/{}  ({})".format(rtkey.capitalize(),self.parser.rtunits[rtkey])
-                else:
-                    return
-                if intensity and rtkey == "RADIANCE":
-                    label = self.parser.IntensityLabel(label)
-                    ewkey = pkey.replace(rtkey, "FFEW")
-                    ew=self.yvariable[ewkey]
-                    values = values/ew
-                self.MakeAx("polar")
-                self.ax.set_theta_offset(np.pi/2)
-                self.ax.set_theta_direction(-1)
-                if self.colorbarzoom:
-                    vmin, vmax = self.colorbarzoom
-                    if vmin == 0 and vmax == 0:
-                        self.colorbarzoom = [values.min(), values.max()]
-                    else:
-                        values = values.clip(min=vmin,max=vmax)
-                cp=self.ax.contourf(phi, theta, values,20)
-                self.fig.colorbar(cp, ax=self.ax, orientation='vertical',pad=0.1,label=label)
-                #self.fig.tight_layout(rect=[0.01,0.01,0.9,0.99])
-                self.canvas.show()
-            else:
-                return
 
     def ShowLegend(self, numleg):
         if numleg < 5:
