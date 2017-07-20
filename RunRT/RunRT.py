@@ -11,6 +11,7 @@ if len(sys.argv) == 1:
     import inspect
     import glob
     import datetime
+    import pickle
     #import CreateToolTip
 import numpy as np
 import platform
@@ -31,6 +32,7 @@ class RunRT:
         # properties
 
         self.sbdartexe = sbdartexe
+
         self.geninput = GenInput.GenInput()  # instance of GenInput class
         self.rtdocwindow = None  # help popup window object
         self.rtdoctext = None  # help text object
@@ -62,14 +64,19 @@ class RunRT:
         self.filemenu.add_command(label="Open", command=self.LoadFile)
         self.filemenu.add_command(label="Save", command=self.WriteFile)
         self.filemenu.add_command(label="View Output", command=self.ViewOutput)
+        self.filemenu.add_command(label="Save Plot", command = lambda choice = 'Save': self.PlotData(choice))
+        self.filemenu.add_command(label="View Plot Data", command = lambda choice = 'View': self.PlotData(choice))
+        self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
+        self.filemenu.add_command(label="Pickle Save", command = self.PickleSave)
         self.menubar.add_cascade(label="File",menu=self.filemenu)
 
         self.optionmenu = Menu(self.menubar, tearoff=0)
-        self.optionvalue = IntVar(0)
-        self.optionmenu.add_radiobutton(label="Nominal", variable=self.optionvalue, value=0, command=self.SetupNominalPlots)
-        self.optionmenu.add_radiobutton(label='Hourly irradiance', variable=self.optionvalue, value=1, command=self.SetupHourly)
-        self.optionmenu.add_radiobutton(label='Hourly irradiance (fine)', variable=self.optionvalue, value=2, command=self.SetupHourlyPlace)
-        self.optionmenu.add_radiobutton(label='Daily fluence', variable=self.optionvalue, value=3, command=self.SetupDailyLat)
+        self.optionDiurnalPlot = IntVar(0)
+        self.optionmenu.add_radiobutton(label="Nominal", variable=self.optionDiurnalPlot, value=0, command=self.SetupNominalPlots)
+        self.optionmenu.add_radiobutton(label='Hourly irradiance', variable=self.optionDiurnalPlot, value=1, command=self.SetupHourly)
+        self.optionmenu.add_radiobutton(label='Hourly irradiance (fine)', variable=self.optionDiurnalPlot, value=2, command=self.SetupHourlyPlace)
+        self.optionmenu.add_radiobutton(label='Diurnal average vs lat', variable=self.optionDiurnalPlot, value=3, command=lambda parm='day' : self.SetupDailySpinner(parm))
+        self.optionmenu.add_radiobutton(label='Diurnal average vs day', variable=self.optionDiurnalPlot, value=4, command=lambda parm='lat' : self.SetupDailySpinner(parm))
         self.optionComparisonPlot = IntVar(0)
         self.optionmenu.add_radiobutton(label='No Comparison', variable = self.optionComparisonPlot, value=0, command = self.Plotit)
         self.optionmenu.add_radiobutton(label='Difference Plot', variable = self.optionComparisonPlot, value=1, command = self.Plotit)
@@ -202,13 +209,15 @@ class RunRT:
         self.yaxisautoscale = Checkbutton(self.frameplotcontrols, text="Y-Autoscale", variable=self.yautoscale,command=self.Plotit)
         self.yaxisautoscale.pack(side='left')
 
+
         # set up canvas
 
         self.fig = Figure(figsize=(9, 6), dpi=100) # 9,7
         self.fig.patch.set_facecolor('white')
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.framegraph)
-        self.canvas.mpl_connect('key_press_event', self.KeyPressHandler)
+        #self.canvas.mpl_connect('key_press_event', self.KeyPressHandler)
+        #self.canvas.mpl_connect('button_press_event', self.ShowPlotData)
         self.canvas.mpl_connect('pick_event', self.SelectLine)
         self.canvas.mpl_connect('scroll_event', self.GraphMouseWheel)
         self.canvas.mpl_connect('motion_notify_event', self.HilightLine)
@@ -236,10 +245,11 @@ class RunRT:
             with open("RecentFile", 'r') as myfile:
                 filename = myfile.read()
             self.LoadFile(filename=filename)
+            if not os.path.isfile(sbdartexe):
+                self.Popup(self.framegraph, "Path to SBDART executable is not correct\nReplace line 25 of RunRT with correct path", wait=True)
+
         except:
             pass
-
-
 
     def SelectLine(self, event):
         '''show label of picked line in preview textbox'''
@@ -248,15 +258,65 @@ class RunRT:
             text = event.artist.get_label()
             text = text[text.find(' ')+1:]
             if event.mouseevent.button == 1:
-                x=event.artist.get_xdata()
-                y=event.artist.get_ydata()
-                msg="{:>21}\n\n".format(text)
-                for x,y in zip(x,y):
-                    msg+='{:10.3e}\t{:10.3e}\n'.format(float(x),float(y))
-                self.Popup(self.framegraph, msg)
-            elif event.mouseevent.button == 2:
                 self.diffbase = text
+                self.PreviewLine("Baseline set to "+text)
                 self.Plotit()
+
+    def GetPlotData(self, choice):
+        ylbls0 = []
+        ylbls1 = []
+        ydata = []
+        xdata = None
+
+        for curve in self.ax.get_lines():
+            ylbls0.append(curve.get_label().split()[0])
+            ylbls1.append(curve.get_label().split()[1])
+            xdata = curve.get_xdata()
+            ydata.append(curve.get_ydata())
+        if choice == 'View':
+            nc = len(ylbls0)
+            fm1 = ' ' * 11 + '\t{:11}' * nc + '\n'
+            fm2 = '\n{:11.3e}' + '\t{:11.3e}' * nc
+            txt = fm1.format(*ylbls0)
+            txt += fm1.format(*ylbls1)
+            for i, x in enumerate(xdata):
+                y = []
+                for j in range(0, len(ydata)):
+                    y.append(float(ydata[j][i]))
+                txt += fm2.format(x, *y)
+            return txt
+        elif choice == 'Copy':
+            txt = 'x=[' + ','.join(['{:11.3e}'.format(float(x)) for x in xdata]) + ']\n'
+            yparts = []
+            for yy in ydata:
+                t = '[' + ','.join(['{:11.3e}'.format(float(y)) for y in yy]) + ']'
+                yparts.append(t)
+            txt += 'y=[' + ',\n'.join(yparts) + ']'
+            return txt
+
+    def PlotData(self, choice):
+        print 'choice =',choice
+        if choice == 'Save':
+            for k in range(0, 100):
+                dir = ""
+                if os.path.isdir("RUNS"):
+                    dir = "RUNS{}".format(os.path.sep)
+                plotname = "{}{}_{}.png".format(dir, self.runname, str(k).zfill(2))
+                if not os.path.isfile(plotname):
+                    self.fig.savefig(plotname)
+                    self.Popup(self.framegraph,"{} saved".format(plotname))
+                    return
+            self.Popup(self.framegraph, "Could not write " + plotname)
+
+        else:
+            txt = self.GetPlotData(choice)
+            if choice == 'View':
+                self.Popup(self.framegraph,txt)
+            r = Tk()
+            r.withdraw()
+            r.clipboard_clear()
+            r.clipboard_append(txt)
+            r.destroy()
 
     def HilightLine(self, event):
         '''hilight line on mouse hover'''
@@ -279,30 +339,6 @@ class RunRT:
                 legline.set_linewidth(normalwidth)
 
         self.fig.canvas.draw()
-
-    def KeyPressHandler(self, event):
-        '''
-        ctrl-p  print figure
-        ctrl-d  plot difference plot
-        dtrl-r  plot ratio plot
-        :param event:
-        :return:
-        '''
-        if event.key == 'ctrl+p':
-            for k in range(0, 100):
-                dir = ""
-                if os.path.isdir("RUNS"):
-                    dir = "RUNS{}".format(os.path.sep)
-                plotname = "{}{}_{}.png".format(dir, self.runname, str(k).zfill(2))
-                if not os.path.isfile(plotname):
-                    self.fig.savefig(plotname)
-                    self.Popup(self.framegraph,"{} saved".format(plotname))
-                    return
-            self.Popup(self.framegraph, "Could not write " + plotname)
-        elif event.key == 'ctrl+c':
-            self.diffbase = ''
-            self.Plotit()
-
 
     def SelectCaptionParm(self, event):
         '''
@@ -593,7 +629,7 @@ class RunRT:
 
         if msg:
             self.Popup(self.framegraph, msg)
-            self.optionvalue.set(0)
+            self.optionDiurnalPlot.set(0)
             return False
         else:
             return True
@@ -669,7 +705,7 @@ class RunRT:
 
             self.Plotit()
 
-    def SetupDailyLat(self):
+    def SetupDailySpinner(self, parm):
         variableParms, constantParms, parms = self.GetParmsInCmd(clean=True)
         valid = self.ValidForEphemeris(constantParms, parms)
 
@@ -679,13 +715,17 @@ class RunRT:
                 spinbox.destroy()
             self.optionSpinners=[]
 
-
-            daychoice=['day={}'.format(day) for day in range(1,366,5)]
-            spinbox = Spinbox(self.frameplotcontrols, width=10, values=daychoice, command=self.Plotit, repeatdelay=500, wrap=True)
+            if parm == 'day':
+                minv, maxv = (1,366)
+            else:
+                minv, maxv = (-90,91)
+            choice=['{}={}'.format(parm, v) for v in range(minv, maxv,5)]
+            spinbox = Spinbox(self.frameplotcontrols, width=10, values=choice, command=self.Plotit, repeatdelay=500, wrap=True)
             spinbox.pack(side='left')
             spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
             self.optionSpinners.append(spinbox)
             self.Plotit()
+
 
     def GetOptionSpinnerValues(self):
         values = []
@@ -971,23 +1011,34 @@ class RunRT:
         xlabel = "$"+self.xlabel+"$"
         x = np.array([float(xx) for xx in self.xvariable])
 
-        if self.optionvalue.get() in [1,2]:
-            date, daylight, isza, iszap, noon, solfac, wt, x = self.SetupEphemHours(x)
+        if self.optionDiurnalPlot.get() in [1, 2]:
+            day, lat, lon = self.GetEphemInputs()
+            date, noon, daylight, solfac, wsza, x = self.SetupEphemHours(x, day, lat, lon)
+            wfloor = np.floor(wsza)
+            wt = wsza - wfloor
+            isza = wfloor.astype(int)
+            iszap = np.ceil(wsza).astype(int)
             xlabel = 'UTC TIME (hours)'
             noontime = "{}:{:02}:{:02}".format(int(noon), int(noon*60) % 60, int(noon*3600) % 60)
             plottitle = 'Date {}   noon={}  daylight={:.2f}'.format(date, noontime, daylight)
 
-        elif self.optionvalue.get() == 3:
-            date, isza, iszap, solfac, wt, x = self.SetupEphemDaily(x)
+        elif self.optionDiurnalPlot.get() == 3:
             xlabel = 'Latitude (deg)'
-            #plottitle = 'Solar Flux for {}'.format(date)
+            day, junk, junk = self.GetEphemInputs()
+            lats = np.arange(-90,91,5)
+            solfacarr, timearr, wszaarr = self.DiurnalAverageSetup(day, lats, x)
+        elif self.optionDiurnalPlot.get() == 4:
+            xlabel = 'Day Number'
+            junk, lat, junk = self.GetEphemInputs()
+            days = np.arange(1,366,5)
+            solfacarr, timearr, wszaarr = self.DiurnalAverageSetup(days, lat, x)
 
-        basequant = basequant = self.diffbase if self.optionComparisonPlot.get() else ''
+        basequant = self.diffbase if self.optionComparisonPlot.get() else ''
         for pkey in pdict.keys():
             color = pdict[pkey][0]
             marker = pdict[pkey][1]
             linelabel = self.GetLinelabel(pdict[pkey][2])
-            if self.optionvalue.get() == 0:
+            if self.optionDiurnalPlot.get() == 0:
                 plottitle = pdict[pkey][3]
             rtkey=pkey.split()[0]
             ylabel = self.parser.rtunits[rtkey]
@@ -995,24 +1046,31 @@ class RunRT:
             if self.goodkey(pkey):
                 y = np.array(self.yvariable[pkey][:])
 
-                if self.optionvalue.get() in [1,2]:
-                    #y = np.array(y)
-                    try:
-                        y = solfac*(y[isza]*(1-wt)+y[iszap]*wt)
-                    except:
-                        return
+                if self.optionDiurnalPlot.get() in [1, 2]:
+                    y = solfac*(y[isza]*(1-wt)+y[iszap]*wt)
+                elif self.optionDiurnalPlot.get() == 3:
+                    x, y = self.DiurnalAverage(lats, solfacarr, timearr, wszaarr, y)
+                elif self.optionDiurnalPlot.get() == 4:
+                    x, y = self.DiurnalAverage(days, solfacarr, timearr, wszaarr, y)
+
 
                 if basequant:
                     diffquant = linelabel[linelabel.find(' ')+1:]
                     if basequant == diffquant: continue
-                    if self.optionvalue.get() == 0:
+                    if self.optionDiurnalPlot.get() == 0:
                         plottitle = "Difference from {}    {}".format(basequant, plottitle)
                     diffquant=diffquant.replace(' ','_')
                     basequant=basequant.replace(' ','_')
                     bkey = pkey.replace(diffquant, basequant)
                     if self.goodkey(bkey):
                         yb = np.array(self.yvariable[bkey])
-                        yb = solfac*(yb[isza]*(1-wt)+yb[iszap]*wt)
+                        if self.optionDiurnalPlot.get() in [1, 2]:
+                            yb = solfac*(yb[isza]*(1-wt)+yb[iszap]*wt)
+                        elif self.optionDiurnalPlot.get() == 3:
+                            junk, yb = self.DiurnalAverage(lats, solfacarr, timearr, wszaarr, yb)
+                        elif self.optionDiurnalPlot.get() == 4:
+                            junk, yb = self.DiurnalAverage(days, solfacarr, timearr, wszaarr, yb)
+
                         if self.optionComparisonPlot.get() == 1:
                             y -= yb
                         elif self.optionComparisonPlot.get() == 2:
@@ -1050,6 +1108,51 @@ class RunRT:
         self.ax.set_ylabel(ylabel)
         self.canvas.show()
 
+    def DiurnalAverageSetup(self, days, lats, x):
+        wszaarr = []
+        solfacarr = []
+        timearr = []
+
+        if hasattr(lats,"__len__"):
+            days = [days]*len(lats)
+        else:
+            lats = [lats]*len(days)
+        for k in range(len(days)):
+            day = days[k]
+            lat = lats[k]
+            date, noon, daylight, solfac, wsza, time = self.SetupEphemHours(x, day, lat, 0)
+            wszaarr.append(wsza)
+            solfacarr.append(solfac)
+            timearr.append(time)
+        return solfacarr, timearr, wszaarr
+
+    def DiurnalAverage(self, lats, solfacarr, timearr, wszaarr, y):
+        '''
+        compute diurnal average of irradiance quantity y
+        :param lats:  independent variable, either lats or days
+        :param solfac: solar orbital factor
+        :param solfacarr:  array of solar orbital factors
+        :param timearr:    array of times
+        :param wszaarr:    array of floating point indicies
+        :param x:
+        :param y:
+        :return:
+        '''
+        farray = []
+        for k in range(len(lats)):
+            wsza = wszaarr[k]
+            wfloor = np.floor(wsza)
+            wt = wsza - wfloor
+            isza = wfloor.astype(int)
+            iszap = np.ceil(wsza).astype(int)
+            solfac = solfacarr[k]
+            t = timearr[k]
+            f = solfac * (y[isza] * (1 - wt) + y[iszap] * wt)
+            farray.append(np.trapz(f, x=t) / 24)
+        y = np.array(farray)
+        x = np.array(lats)
+        return x, y
+
     def Plotit11(self):
         self.ClearPlot()
         self.MakeAx('xy')
@@ -1060,7 +1163,7 @@ class RunRT:
         if len(pdict.keys()) == 0:
             return
 
-        basequant = basequant = self.diffbase if self.optionComparisonPlot.get() else ''
+        basequant = self.diffbase if self.optionComparisonPlot.get() else ''
         for pkey in pdict.keys():
             color = pdict[pkey][0]
             marker = pdict[pkey][1]
@@ -1167,21 +1270,18 @@ class RunRT:
 
 
 
-    def SetupEphemHours(self, x):
+    def SetupEphemHours(self, x, day, lat, lon):
         '''
         set up parameters for hourly ephemeris computation
         :param x:
         :return:
         date        date string
-        daylight    hours of daylight
-        isza        index array into yvariable
-        iszap       index array into yvariable
         noon        time at which sun reaches highest elevation at this day and location
+        daylight    hours of daylight
         solfac      irradiance factor cos(sunzen)/rsun**2
-        wt          weighting factor for yvariable interpolation
-        x           hours array
+        wsza        floating point index for yvariable interpolation
+        hours       time array
         '''
-        day, lat, lon = self.GetEphemInputs()
         ephm = Ephemeris.SolarEphemeris(lat, lon)
         noon, daylight = ephm.suntimes(day)
         dayhours = max([daylight, 8])
@@ -1190,44 +1290,7 @@ class RunRT:
         date = str(datetime.date.fromordinal(day))[5:]
         sza = x * np.pi / 180
         wsza = np.interp(zen, sza, np.arange(0, len(self.xvariable)), left=0, right=len(x) - 1)
-        wfloor = np.floor(wsza)
-        wt = wsza - wfloor
-        isza = wfloor.astype(int)
-        iszap = np.ceil(wsza).astype(int)
-        x = hours
-        return date, daylight, isza, iszap, noon, solfac, wt, x
-
-    def SetupEphemDaily(self, x):
-        '''
-        set up parameters for daily fluence calculation
-        :param x:
-        :return:
-        date        date string
-        daylight    hours of daylight
-        isza        index array into yvariable
-        iszap       index array into yvariable
-        wt          weighting factor for yvariable interpolation
-        x           hours array
-        '''
-        day, lat, lon = self.GetEphemInputs()
-        lats = range(-90,91,5)
-
-        for lat in lats:
-            ephm = Ephemeris.SolarEphemeris(lat, lon)
-            noon, daylight = ephm.suntimes(day)
-            dayhours = max([daylight, 1])
-            hours = np.linspace(noon - 0.5 * dayhours, noon + 0.5 * dayhours, 40)
-            zen, phi, solfac = ephm.sunpos(day, hours)
-
-            sza = x * np.pi / 180
-
-            wsza = np.interp(zen, sza, np.arange(0, len(self.xvariable)), left=0, right=len(x) - 1)
-            wfloor = np.floor(wsza)
-            wt = wsza - wfloor
-            isza = wfloor.astype(int)
-            iszap = np.ceil(wsza).astype(int)
-            x = hours
-        return date, isza, iszap, solfac, wt, x
+        return date, noon, daylight, solfac, wsza, hours
 
     def GetEphemInputs(self):
         '''
@@ -1287,6 +1350,8 @@ class RunRT:
             dlg.grab_set()
             dlg.transient(master=frame)
             dlg.wait_window(dlg)
+
+        dlg.lift(aboveThis=frame)
         return txt, dlg
 
     def GetRootName(self, filename):
@@ -1466,6 +1531,8 @@ class RunRT:
         self.sbdartoutput = ""
         self.caption.delete(1.0, 'end')
         self.diffbase = ''
+        self.optionComparisonPlot.set(0)
+        self.PreviewLine("")
         self.AddRtParm()
 
     def AddRtParm(self):
@@ -1587,6 +1654,21 @@ class RunRT:
                 fh.writelines(self.sbdartoutput)
             fh.close()
             self.runname = self.GetRootName(fh.name)
+
+    def PickleSave(self):
+        """
+        Write current command file to a sbd file
+        :return:
+        """
+        if self.runname:
+            name = self.runname
+        else:
+            name = 'sbrt'
+        fh = tkFileDialog.asksaveasfile(mode='wb', initialfile=self.runname, defaultextension=".pkl",
+                                        filetypes=(("pkl files", "*.pkl"), ("all files", "*.*")))
+        self.Popup(self.framegraph, name)
+        obj = [self.xvariable, self.yvariable]
+        pickle.dump(obj, fh)
 
     def ValidateCommands(self):
         """
@@ -1751,6 +1833,7 @@ class RunRT:
         self.yrange=[float('inf'), float('-inf')]
         self.diffplot =''
         self.diffbase = ''
+        self.PreviewLine('')
 
         if kwargs.has_key('ingest') and kwargs['ingest']:
             ingest = True

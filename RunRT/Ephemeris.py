@@ -139,7 +139,7 @@ class SolarEphemeris:
         :return:
         zenith      solar zenith (radians)
         azimuth     solar azimuth (radians)
-        solfac      solar irradiance correction factor for distance and sun angle
+        solfac      solar irradiance correction factor for distance
         '''
         day, sunlat, sunlon = self.solarcoorinates(iday, time)
 
@@ -153,7 +153,7 @@ class SolarEphemeris:
         azimuth=np.arctan2(xx,yy)
         zenith=np.arccos(zz)
         rsun=1.-self.eccen*np.cos(self.degpday*(day-self.dayph)*self.dtor)
-        solfac=zz/rsun**2
+        solfac=1/rsun**2
         return zenith, azimuth, solfac
 
     def solarcoorinates(self, iday, time):
