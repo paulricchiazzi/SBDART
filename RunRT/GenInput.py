@@ -192,7 +192,7 @@ class GenInput:
         rt parameter range dictionary.  key is rt parameter name, value is description and suggested range and skew
         :return:
         '''
-        return {"SZA":    "Solar zenith angle (degrees)            $ 0.0:80:1",
+        return {"SZA":    "Solar zenith angle (degrees)            $ 0.0:90:1",
                 "CSZA":   "Cosine of solar zenith                  $ 0:1:1",
                 "WLINF":  "Wavelength lower limit (um)             $ 0.250:100:1",
                 "WLSUP":  "Wavelength upper limit (um)             $ 0.250:100:1",
