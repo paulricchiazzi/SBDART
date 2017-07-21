@@ -6,9 +6,9 @@ useful for generating output for graphics postprocessors or for
 generating databases for remote sensing retrievals, but it is not very
 useful for students trying to understand how radiative transfer
 work. The RunRT graphical user interface is designed to fill this gap.
-RunRT is a python 2.7 graphics code that makes it easy to run SBDART and
-display its output graphically in ways that bring out the essential
-features of the radiative transfer physics.
+RunRT is a python 2.7 graphics code that makes it easy to run SBDART
+and display its output graphically in ways that bring out the
+essential features of the radiative transfer physics.
 
 The RunRT interface is quite simple yet flexible enough to perform
 many of the computational problems that come up in climate science or
@@ -24,8 +24,8 @@ When RunRT starts up, the "RT parm" entry widget is initialized with
 depth.  This parameter was chosen as the default because it has large
 effect on the radiation budget.  Next to the "RT parm" selection box
 is a text field that gives a short description of the RT parameter.
-Next, the "Start" and "End" boxes show a physically reasonable range of
-values for cloud optical depth.  The "Num" entry box specifies the
+Next, the "Start" and "End" boxes show a physically reasonable range
+of values for cloud optical depth.  The "Num" entry box specifies the
 number of samples between the "Start" and "End" values.  Finally, the
 "Skew" parameter is used to bias the sample distribution toward
 smaller values.  (Skew=0 corresponds to a logarithmic distribution,
@@ -81,7 +81,8 @@ sequence.
 
 At this point the command entry box should look like,
 
-# Description: 
+
+# Description: Example 1
 #
 TCLOUD=0;10;20;30;40;50;60;70;80;90
 SZA=0;10;20;30;40;50;60;70;80
@@ -96,7 +97,8 @@ type of output generated in this example is specific to the IOUT=10,
 the default output format.  All the IOUT output formats that may be
 used with RunRT are listed here:
 
-    IOUT=1          Spectral profile plots
+    IOUT=1          Spectral profile irradiance plots
+    IOUT=2          Spectral profile transmission plots
     IOUT=10         Spectrally integrated fluxes at top and bottom of atmosphere
     IOUT=11         Vertical profiles of wavelength integrated flux
     IOUT=20 or 21   Radiance contour plots
@@ -170,44 +172,54 @@ approach.
 
 For the next example, we'll compute the spectral radiant flux leaving
 the top of the atmosphere in the infrared, with goal of determining
-how variations in CO2 mixing ratio and water vapor content affects the
+how variations in water vapor and surface temperature affect the
 radiative energy budget. Use the techniques described above to put the
 following commands in the command box:
 
-XCO2=280;400;560
-UW=1;2.5;5
+# Description: Example 2
+#
+BTEMP=260;270;280;290;300;310;320;330
+UW=0.5261;1.1;1.725;2.406;3.15;3.96;4.843;5.806;6.856;8
 WLINF=6
-WLSUP=16
-WLINC=5
+WLSUP=14
+WLINC=20
 IOUT=1
 
 An easier way to accomplish this would have been to copy the commands
 listed above directly into the command box.  This could be done using
 the copy and paste commands appropriate to your operating system
 (e.g., COMMAND-C and COMMAND-V on OSX).  After the command box is
-populated as indicated above, press "Run". This computation shows the
-surface flux for CO2 mixing ratios representative of pre-industrial
-levels, current levels, and twice the pre-industrial levels of CO2.
-It also shows the effect of dry, average and very moist atmospheric
-water vapor content.  Note, in runs that use the IOUT=1 output format,
-the x-variable is always wavelength (or wavenumber). For this run, the
-spinbox shows different values of the percipitable water vapor.
+populated as indicated above, press "Run".  Note, in runs that use the
+IOUT=1 output format, the x-variable is always wavelength (or wavenumber).
+For this run, the spinbox shows different values of the percipitable
+water vapor.
 
       AN EXAMPLE SHOWING VERTICAL RADIANT FLUX PROFILES (IOUT=11)
 
 For this example, we'll compute the vertical profile of radiant flux
-in the infrared. We'd like to see where the CO2 and relative humidity
-variation affects the vertical profile using the same set of RT
-parameters defined in the previous example.  The only change required
-is to set IOUT=11 in the previous command sequence. In this case the
-dependent variable is the height in the atmosphere which is shown
-along the vertical y-axis.
+in the infrared. We'd like to see where water vapor and CO2 affects
+the IR radiant flux over the same spectral range as the previous
+example.  In this case the dependent variable is the height in the
+atmosphere, which is shown along the vertical y-axis.
+
+# Description: Example 3
+#
+UW=0.5;1.5;4
+XCO2=200;400
+BTEMP=300
+WLINF=6
+WLSUP=14
+WLINC=20
+IOUT=11
+
 
       A RADIANCE EXAMPLE (IOUT=21)
 
 Our final example will show how to produce radiance contour plots with
 SBDART. Set the command box as follows:
 
+# Description: Example 4
+#
 TCLOUD=0;10
 WLINF=0.4;0.8
 WLSUP=0.4;0.8 &
@@ -226,31 +238,18 @@ varied slightly to compute the radiance integrated over a band of
 wavelengths, say over 10 um bands centered at 0.45 and 0.85 um. The
 input commads for that calculation would look like:
 
+# Description: Example 5
+#
 TCLOUD=0;10
 WLINF=0.4;0.8
 WLSUP=0.5;0.9 &
 SZA=60
 IOUT=21
 
-        OTHER INTERSTING FEATURES OF the RunRT USER INTERFACE
+        OTHER INTERSTING FEATURES OF THE RunRT USER INTERFACE
 
-1) The File menu provides several ways to save data displayed in the
-   current plot.
-     * Pressing File -> View Plot Data, will display the current plot
-       data to a popup window and save the data to the clipboard. The
-       clipboard information may also be further analyzed by pasteing
-       it into a spreadsheet (e.g., Excel).
-     * Pressing File -> Save Plot will cause the visible plot to be
-       written to a PNG file in the same directory as .sbd output files.
-       The name of the plot will be derived from the run name associated
-       with the scenario.  If no run name has been set, the default run
-       name of 'sbrt.sbd' is used. (Run names are set when the RunRT
-       scenario is saved.)
-     * Pressing File -> Copy Plot Data, copies the plot data to the
-       clipboard in a format that may be used directly in an python
-       (or ipython) script.  The clipboard will contain text that
 
-2) With focus in the plot window the x and y plot range may be
+1) With focus in the plot window the x and y plot range may be
    adjusted by rolling the mouse wheel.  Rolling the mouse wheel to
    the left of y-axis adjusts the y-axis scale. Mouse rolls below the
    x-axis adjusts the x-axis scale. If the roll event occurs near the
@@ -260,12 +259,12 @@ IOUT=21
    limit is increased or decreased.  The effect of the axis scaling is
    removed by toggling the y-autorange checkbox.
 
-3) If SBDART fails to complete the full RunRT command sequence, the
+2) If SBDART fails to complete the full RunRT command sequence, the
    last attempted RT command sequence is saved in a file
    RUNS/~runrt.sbd.  This file is copied back into the command entry
    box by selecting File -> Recover
 
-4) In addition to the document you are now reading, the Help menu
+3) In addition to the document you are now reading, the Help menu
    contains a help file, rtdoc.txt, which documents SBDART input
    parameters.  If rtdoc is visible in a pop-up window, it will move
    to the place in the documentation that covers the RT parameter
@@ -275,15 +274,15 @@ IOUT=21
    to change the RT parm selection before the rtdoc popup window will
    appear again).
 
-5) With focus in the RT parm widget, you can quickly move to another
+4) With focus in the RT parm widget, you can quickly move to another
    RT parm by entering the first few letters of the parameter and
    pressing RETURN.  For example, typing 'al<return>' is quick way to
    switch to the ALBCON RT parameter.
 
-6) Double clicking on one of the parameters listed in the command box
+5) Double clicking on one of the parameters listed in the command box
    will cause that parameter to be selected in the RT parm widget.
 
-7) When assembling a command file that varies several RT parameters in
+6) When assembling a command file that varies several RT parameters in
    lock-step it is sometimes necessary to define a loop variable which
    is not itself an RT variable interpretable by SBDART.  For example,
    suppose the goal is to compute the thermal spectral profile for
@@ -313,14 +312,18 @@ IOUT=21
    RunRT to disambiguate the loop sequence.  The new command sequence
    looks like this:
 
-   _Abs=No H2O;No CO2;No O3;All
-   UW=    0; -1;-1;-1 &
-   XCO2= -1;  0;-1;-1 &
-   UO3=  -1; -1; 0;-1 &
-   WLINF=6
-   WLSUP=14
-   WLINC=5
-   IOUT=1
+# Description: Example 5
+#
+#   Demonstrate use of pseudo variables to disambiguate parameter keys
+#
+_Abs=No H2O;No CO2;No O3;All
+UW=    0; -1;-1;-1 &
+XCO2= -1;  0;-1;-1 &
+UO3=  -1; -1; 0;-1 &
+WLINF=6
+WLSUP=14
+WLINC=5
+IOUT=1
 
    The psuedo variant, in this case _Abs, is composed of any string
    that starts with a non-alphabetic character.  The values on the
@@ -329,23 +332,97 @@ IOUT=21
    'ALL') will show up in the line labels, but the psuedo variant _Abs
    will not.
 
-8) Moving the mouse cursor near a plot line hilights the line both on
+7) Moving the mouse cursor near a plot line hilights the line both on
    the plot and in the legend.  This is helpful when the color of
    plotted lines are hard to distinguish.
 
-9) Click on a plot line with left mouse button to mark it as a baseline
+8) Click on a plot line with left mouse button to mark it as a baseline
    for difference plots.  Then by pressing options -> 'Difference plots'
    or 'Ratio plots' in options menu,the baseline curve will either be
    subtracted or divided out of all other lines in the plot.  Pressing
    the 'No comparison plots' will restore the default plots.
 
-10)SBDART can be used to plot the diurnal variation of solar flux at a
+9)SBDART can be used to plot the diurnal variation of solar flux at a
    given latitutude and longitude as a function of time.  The first
    step is to compute a sequence of SBDART IOUT=10 calculations
-   (irradiance at the top and bottom of the atmospher) with SZA as the
+   (irradiance at the top and bottom of the atmosphere) with SZA as the
    first variant parameter.  After the runs are complete, the diurnal
-   plots are produced by pressing options -> 'Hourly irradiance' or
-   'Hourly irradiance (fine)'.  The second option allows fine-scale
-   specification of both latitude and longitude, while the second only
-   allows coarse latitude changes.  The normal plots are restored by
-   pressing options -> 'Nominal'
+   plots are produced by pressing one of these choices in the options
+   menu:
+
+   * Nominal                   return to normal plotting
+   * Hourly irradiance         irradiance as a function of time of day
+   * Hourly irradiance (fine)  irradiance as a function of time of day
+   * Diurnal average vs lat    average irradiance over day vs latitude
+   * Diurnal average vs day    average irradiance over day vs day of year
+
+   For example, try running this sample file before selecting one of the
+   diurnal variation plots in the options menu:
+
+# Description: Example 6
+#
+#   Demonstrate diurnal plots based on a sequence of SZA calculations
+#
+SZA=0;5;10;15;20;25;30;35;40;45;50;55;60;65;70;75;80;85;90
+TCLOUD=0;6.38;27.84;100
+WLINF=0.3;0.8
+WLSUP=0.3;0.8 &
+NRE=8
+WLINC=20
+IOUT=10
+
+10) The File menu provides several ways to save data displayed in the
+    current plot.
+
+     * Pressing File -> View Plot Data, will display the current plot
+       data to a popup window and save the data to the clipboard. The
+       clipboard information may also be further analyzed by pasteing
+       it into a spreadsheet (e.g., Excel).
+
+     * Pressing File -> Save Plot will cause the visible plot to be
+       written to a PNG file in the same directory as .sbd output files.
+       The name of the plot will be derived from the run name associated
+       with the scenario.  If no run name has been set, the default run
+       name of 'sbrt.sbd' is used. (Run names are set when the RunRT
+       scenario is saved.)
+
+     * Pressing File -> Copy Plot Data, copies the plot data to the
+       clipboard in a format that may be used directly in an python
+       (or ipython) script.  The clipboard will contain text that
+
+     * Pressing File -> Pickle Save, writes the run data to a pickle
+       file.  The file will be saved in python's object serialization
+       format.  The pickle file (.pkl suffix) provides an easy way to
+       import the SBDART run data into an ipython session.  For
+       example, run and save Example2, above, as example2.pkl.  Then
+       the SBDART data may be imported into an ipython session as
+       follows:
+
+$ ipython
+Python 2.7.10 (default, Feb  7 2017, 00:08:15)
+Type "copyright", "credits" or "license" for more information.
+
+IPython 2.0.0-dev -- An enhanced Interactive Python.
+?         -> Introduction and overview of IPython's features.
+%quickref -> Quick reference.
+help      -> Python's own help system.
+object?   -> Details about 'object', use 'object??' for extra details.
+
+In [1]: import pickle
+In [2]: fh = open('example2.pkl', 'rb')
+In [3]: x,y=pickle.load(fh)
+
+        The x variable in this case is a vector of spectral values
+        from 6 to 14 um.  The y variable is a python dictionary, with
+        keys built from of RT run parameters.  The values of
+        dictionary are the different y vectors corresponding to the
+        spectral variation of x.  The keys can be listed using this
+        command,
+
+In [4]: y.keys()
+
+        and plots can be produced by naming a particular y-vector:
+
+In [5]: %pylab
+In [6]: plot(x,y['TOPUP BTEMP=330 UW=8'])
+

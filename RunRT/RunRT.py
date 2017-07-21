@@ -63,11 +63,12 @@ class RunRT:
         self.filemenu.add_command(label="Recover", command=lambda: self.LoadFile("RUNS/~RunRT.sbd"))
         self.filemenu.add_command(label="Open", command=self.LoadFile)
         self.filemenu.add_command(label="Save", command=self.WriteFile)
+        self.filemenu.add_command(label="Pickle Save", command = self.PickleSave)
+        self.filemenu.add_separator()
         self.filemenu.add_command(label="View Output", command=self.ViewOutput)
         self.filemenu.add_command(label="Save Plot", command = lambda choice = 'Save': self.PlotData(choice))
         self.filemenu.add_command(label="View Plot Data", command = lambda choice = 'View': self.PlotData(choice))
         self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
-        self.filemenu.add_command(label="Pickle Save", command = self.PickleSave)
         self.menubar.add_cascade(label="File",menu=self.filemenu)
 
         self.optionmenu = Menu(self.menubar, tearoff=0)
@@ -77,6 +78,7 @@ class RunRT:
         self.optionmenu.add_radiobutton(label='Hourly irradiance (fine)', variable=self.optionDiurnalPlot, value=2, command=self.SetupHourlyPlace)
         self.optionmenu.add_radiobutton(label='Diurnal average vs lat', variable=self.optionDiurnalPlot, value=3, command=lambda parm='day' : self.SetupDailySpinner(parm))
         self.optionmenu.add_radiobutton(label='Diurnal average vs day', variable=self.optionDiurnalPlot, value=4, command=lambda parm='lat' : self.SetupDailySpinner(parm))
+        self.optionmenu.add_separator()
         self.optionComparisonPlot = IntVar(0)
         self.optionmenu.add_radiobutton(label='No Comparison', variable = self.optionComparisonPlot, value=0, command = self.Plotit)
         self.optionmenu.add_radiobutton(label='Difference Plot', variable = self.optionComparisonPlot, value=1, command = self.Plotit)
@@ -622,10 +624,9 @@ class RunRT:
                 iout = int(c.split('=')[1])
         msg = ''
         if iout != 10:
-            msg = "* Solar ephemeris options cannot be generated unless IOUT=10\n\n"
+            msg = "* This plot option requires output generated with IOUT=10\n\n"
         if not (parms.startswith('SZA') or parms.startswith('CSZA')):
-            msg += "* Solar ephemeris options cannot be generated unless\n" + \
-                   "  SZA or CSZA is the first variable parameter"
+            msg += "* Diurnal variation plots require that SZA is the first variable parameter\n\n"
 
         if msg:
             self.Popup(self.framegraph, msg)
@@ -930,6 +931,7 @@ class RunRT:
             isefftemp = self.parser.menucheck.has_key(' EffectiveTemp') and self.parser.menucheck[' EffectiveTemp'].get()
             if self.goodkey(wlkey) and self.goodkey(pkey):
                 x = self.yvariable[wlkey][:]
+                self.xvariable = x
                 y = self.yvariable[pkey][:]
 
                 if basequant:
@@ -1178,6 +1180,7 @@ class RunRT:
             if self.goodkey(zkey) and self.goodkey(pkey):
                 y = self.yvariable[zkey]
                 x = self.yvariable[pkey][:]
+                self.xvariable = x
 
                 if basequant:
                     diffquant = linelabel[linelabel.find(' ')+1:]
@@ -1289,7 +1292,7 @@ class RunRT:
         zen, phi, solfac = ephm.sunpos(day, hours)
         date = str(datetime.date.fromordinal(day))[5:]
         sza = x * np.pi / 180
-        wsza = np.interp(zen, sza, np.arange(0, len(self.xvariable)), left=0, right=len(x) - 1)
+        wsza = np.interp(zen, sza, np.arange(0, len(sza)), left=0, right=len(x) - 1)
         return date, noon, daylight, solfac, wsza, hours
 
     def GetEphemInputs(self):
@@ -1532,6 +1535,7 @@ class RunRT:
         self.caption.delete(1.0, 'end')
         self.diffbase = ''
         self.optionComparisonPlot.set(0)
+        self.optionDiurnalPlot.set(0)
         self.PreviewLine("")
         self.AddRtParm()
 
@@ -1666,7 +1670,6 @@ class RunRT:
             name = 'sbrt'
         fh = tkFileDialog.asksaveasfile(mode='wb', initialfile=self.runname, defaultextension=".pkl",
                                         filetypes=(("pkl files", "*.pkl"), ("all files", "*.*")))
-        self.Popup(self.framegraph, name)
         obj = [self.xvariable, self.yvariable]
         pickle.dump(obj, fh)
 
@@ -1831,7 +1834,8 @@ class RunRT:
         :return: True if all rt loops complete successfully, False otherwise
         """
         self.yrange=[float('inf'), float('-inf')]
-        self.diffplot =''
+        self.optionComparisonPlot.set(0)
+        self.optionDiurnalPlot.set(0)
         self.diffbase = ''
         self.PreviewLine('')
 

@@ -90,6 +90,8 @@ class GenInput:
                         self.rtvar.append(OrderedDict())
                     self.rtvar[nesting][parm]=values
                     if nesting == 0:
+                        # note that xvariable is set here for IOUT=10,
+                        # it is reset in Plot01 and Plot11 to wavelength and altitude, respectively
                         xvariable = values[:]
                         xlabel = parm
                 else:
