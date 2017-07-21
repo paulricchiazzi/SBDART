@@ -11,7 +11,7 @@ RunRT
 SBDART is a command line code.  It reads inputs from an input file (INPUT) and writes text output to stdout.  This mode of operation is
 useful for generating output for graphics postprocessors or for generating databases for remote sensing retrievals, but it is not very
 useful for students trying to understand radiative transfer. The RunRT graphical user interface is designed to fill this gap.
-RunRT is a python (2.7) graphics code that makes it easy to run SBDART and display its output graphically in ways that bring out the essential features of the radiative transfer physics. More information on how to setup and run RunRT may be found in file runrtdoc.txt in the RunRT folder.  There should be only one editing step necessary to install set up RunRT to run with SBDART, and that is to change the value of the variable sbdartexe to the path to the SBDART executable on your system.  (see line 25 of RunRT.py).
+RunRT is a python (2.7) graphics code that makes it easy to run SBDART and display its output graphically in ways that bring out the essential features of the radiative transfer physics. More information on how to setup and run RunRT may be found in file runrtdoc.txt in the RunRT folder.  There is only one editing step necessary to set up RunRT to run with SBDART: change the value of the variable sbdartexe to the path to the SBDART executable on your system.  (see line 25 of RunRT.py).
 
   
 
