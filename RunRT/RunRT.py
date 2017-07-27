@@ -12,7 +12,6 @@ if len(sys.argv) == 1:
     import glob
     import datetime
     import pickle
-    #import CreateToolTip
 import numpy as np
 import platform
 from collections import OrderedDict
@@ -66,7 +65,7 @@ class RunRT:
         self.filemenu.add_command(label="Pickle Save", command = self.PickleSave)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="View Output", command=self.ViewOutput)
-        self.filemenu.add_command(label="Save Plot", command = lambda choice = 'Save': self.PlotData(choice))
+        self.filemenu.add_command(label="Save plot as PNG", command = lambda choice = 'Save': self.PlotData(choice))
         self.filemenu.add_command(label="View Plot Data", command = lambda choice = 'View': self.PlotData(choice))
         self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
         self.menubar.add_cascade(label="File",menu=self.filemenu)
@@ -74,8 +73,8 @@ class RunRT:
         self.optionmenu = Menu(self.menubar, tearoff=0)
         self.optionDiurnalPlot = IntVar(0)
         self.optionmenu.add_radiobutton(label="Nominal", variable=self.optionDiurnalPlot, value=0, command=self.SetupNominalPlots)
-        self.optionmenu.add_radiobutton(label='Hourly irradiance', variable=self.optionDiurnalPlot, value=1, command=self.SetupHourly)
-        self.optionmenu.add_radiobutton(label='Hourly irradiance (fine)', variable=self.optionDiurnalPlot, value=2, command=self.SetupHourlyPlace)
+        self.optionmenu.add_radiobutton(label='Hourly flux', variable=self.optionDiurnalPlot, value=1, command=self.SetupHourly)
+        self.optionmenu.add_radiobutton(label='Hourly flux (fine)', variable=self.optionDiurnalPlot, value=2, command=self.SetupHourlyPlace)
         self.optionmenu.add_radiobutton(label='Diurnal average vs lat', variable=self.optionDiurnalPlot, value=3, command=lambda parm='day' : self.SetupDailySpinner(parm))
         self.optionmenu.add_radiobutton(label='Diurnal average vs day', variable=self.optionDiurnalPlot, value=4, command=lambda parm='lat' : self.SetupDailySpinner(parm))
         self.optionmenu.add_separator()
@@ -272,7 +271,7 @@ class RunRT:
 
         for curve in self.ax.get_lines():
             ylbls0.append(curve.get_label().split()[0])
-            ylbls1.append(curve.get_label().split()[1])
+            ylbls1.append(curve.get_label().split(' ',1)[1])
             xdata = curve.get_xdata()
             ydata.append(curve.get_ydata())
         if choice == 'View':
@@ -297,7 +296,6 @@ class RunRT:
             return txt
 
     def PlotData(self, choice):
-        print 'choice =',choice
         if choice == 'Save':
             for k in range(0, 100):
                 dir = ""
@@ -651,20 +649,39 @@ class RunRT:
                 spinbox.destroy()
             self.optionSpinners=[]
 
-            daychoice=['day={}'.format(iday) for iday in range(1,366,5)]
-            spinbox = Spinbox(self.frameplotcontrols, width=7, values=daychoice, command=self.Plotit, repeatdelay=500, wrap = True)
-            spinbox.pack(side='left')
-            spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+            spinbox = self.SpinboxEphem('day', range(1,366,5), 171)
             self.optionSpinners.append(spinbox)
-            latchoice=['lat={}'.format(lat) for lat in range(-90,91,5)]
-            spinbox = Spinbox(self.frameplotcontrols, width=6, values=latchoice, command=self.Plotit, repeatdelay=500)
-            spinbox.delete(0,'end')
-            spinbox.insert(0, 'lat=0')
-            spinbox.pack(side='left')
-            spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+            spinbox = self.SpinboxEphem('lat', range(-90,91,5), 35)
             self.optionSpinners.append(spinbox)
 
             self.Plotit()
+
+    def SpinboxEphem(self, parm, span, default, **kwargs):
+        '''
+
+        :param parm:     variable name string (e.g., 'day')
+        :param span:     range of values      (e.g., range(1,366,5)
+        :param default:  starting value       (e.g., 171
+        :param kwargs:
+        :return:        spinbox object
+        '''
+        kwargs['values'] = ['{}={}'.format(parm, v) for v in span]
+        kwargs['repeatdelay']=500
+        kwargs['wrap']=True
+        kwargs['command']=self.Plotit
+        wid = 0
+        for v in kwargs['values']:
+            w = len(v)
+            if w > wid:
+                wid = w
+        kwargs['width'] = wid
+        spinbox = Spinbox(self.frameplotcontrols, **kwargs)
+        if default:
+            spinbox.delete(0,'end')
+            spinbox.insert(0, '{}={}'.format(parm, default))
+        spinbox.pack(side='left')
+        spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+        return spinbox
 
     def SetupHourlyPlace(self):
         '''
@@ -682,26 +699,11 @@ class RunRT:
                 spinbox.destroy()
             self.optionSpinners=[]
 
-            daychoice=['day={}'.format(iday) for iday in range(1,365)]
-            spinbox = Spinbox(self.frameplotcontrols, width=7, values=daychoice, command=self.Plotit, repeatdelay=500, wrap = True)
-            spinbox.pack(side='left')
-            spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+            spinbox = self.SpinboxEphem('day', range(1,366), 171)
             self.optionSpinners.append(spinbox)
-
-            latchoice=['lat={}'.format(lat) for lat in range(-90,91)]
-            spinbox = Spinbox(self.frameplotcontrols, width=6, values=latchoice, command=self.Plotit, repeatdelay=500)
-            spinbox.delete(0,'end')
-            spinbox.insert(0, latchoice[90])
-            spinbox.pack(side='left')
-            spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+            spinbox = self.SpinboxEphem('lat', range(-90,91), 35)
             self.optionSpinners.append(spinbox)
-
-            lonchoice=['lon={}'.format(lon) for lon in range(-180,181)]
-            spinbox = Spinbox(self.frameplotcontrols, width=7, values=lonchoice, command=self.Plotit, repeatdelay=500, wrap = True)
-            spinbox.delete(0,'end')
-            spinbox.insert(0, lonchoice[180])
-            spinbox.pack(side='left')
-            spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+            spinbox = self.SpinboxEphem('lon', range(-180,181), -120)
             self.optionSpinners.append(spinbox)
 
             self.Plotit()
@@ -717,13 +719,9 @@ class RunRT:
             self.optionSpinners=[]
 
             if parm == 'day':
-                minv, maxv = (1,366)
+                spinbox = self.SpinboxEphem('day', range(1,366,5), 177)
             else:
-                minv, maxv = (-90,91)
-            choice=['{}={}'.format(parm, v) for v in range(minv, maxv,5)]
-            spinbox = Spinbox(self.frameplotcontrols, width=10, values=choice, command=self.Plotit, repeatdelay=500, wrap=True)
-            spinbox.pack(side='left')
-            spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
+                spinbox = self.SpinboxEphem('lat', range(-90,91,5), 35)
             self.optionSpinners.append(spinbox)
             self.Plotit()
 
@@ -945,7 +943,7 @@ class RunRT:
                         if self.optionComparisonPlot.get() == 1:
                             y = [a-b for a,b in zip(y,self.yvariable[bkey][:])]
                         elif self.optionComparisonPlot.get() == 2:
-                            y = [a/b for a,b in zip(y,self.yvariable[bkey][:])]
+                            y = [a/b if b>0 else 1e-6 for a,b in zip(y,self.yvariable[bkey][:])]
                             ylabel = 'Ratio'
             else:
                 return
@@ -1012,8 +1010,9 @@ class RunRT:
         plottitle = ""
         xlabel = "$"+self.xlabel+"$"
         x = np.array([float(xx) for xx in self.xvariable])
+        diurnalop = self.optionDiurnalPlot.get()
 
-        if self.optionDiurnalPlot.get() in [1, 2]:
+        if diurnalop in [1, 2]:
             day, lat, lon = self.GetEphemInputs()
             date, noon, daylight, solfac, wsza, x = self.SetupEphemHours(x, day, lat, lon)
             wfloor = np.floor(wsza)
@@ -1024,23 +1023,24 @@ class RunRT:
             noontime = "{}:{:02}:{:02}".format(int(noon), int(noon*60) % 60, int(noon*3600) % 60)
             plottitle = 'Date {}   noon={}  daylight={:.2f}'.format(date, noontime, daylight)
 
-        elif self.optionDiurnalPlot.get() == 3:
+        elif diurnalop == 3:
             xlabel = 'Latitude (deg)'
             day, junk, junk = self.GetEphemInputs()
             lats = np.arange(-90,91,5)
-            solfacarr, timearr, wszaarr = self.DiurnalAverageSetup(day, lats, x)
-        elif self.optionDiurnalPlot.get() == 4:
+            date, solfacarr, timearr, wszaarr = self.DiurnalAverageSetup(day, lats, x)
+            plottitle = 'Date {}'.format(date)
+        elif diurnalop == 4:
             xlabel = 'Day Number'
             junk, lat, junk = self.GetEphemInputs()
             days = np.arange(1,366,5)
-            solfacarr, timearr, wszaarr = self.DiurnalAverageSetup(days, lat, x)
+            date, solfacarr, timearr, wszaarr = self.DiurnalAverageSetup(days, lat, x)
 
         basequant = self.diffbase if self.optionComparisonPlot.get() else ''
         for pkey in pdict.keys():
             color = pdict[pkey][0]
             marker = pdict[pkey][1]
             linelabel = self.GetLinelabel(pdict[pkey][2])
-            if self.optionDiurnalPlot.get() == 0:
+            if diurnalop == 0:
                 plottitle = pdict[pkey][3]
             rtkey=pkey.split()[0]
             ylabel = self.parser.rtunits[rtkey]
@@ -1048,35 +1048,35 @@ class RunRT:
             if self.goodkey(pkey):
                 y = np.array(self.yvariable[pkey][:])
 
-                if self.optionDiurnalPlot.get() in [1, 2]:
+                if diurnalop in [1, 2]:
                     y = solfac*(y[isza]*(1-wt)+y[iszap]*wt)
-                elif self.optionDiurnalPlot.get() == 3:
+                elif diurnalop == 3:
                     x, y = self.DiurnalAverage(lats, solfacarr, timearr, wszaarr, y)
-                elif self.optionDiurnalPlot.get() == 4:
+                elif diurnalop == 4:
                     x, y = self.DiurnalAverage(days, solfacarr, timearr, wszaarr, y)
 
 
                 if basequant:
                     diffquant = linelabel[linelabel.find(' ')+1:]
                     if basequant == diffquant: continue
-                    if self.optionDiurnalPlot.get() == 0:
+                    if diurnalop == 0:
                         plottitle = "Difference from {}    {}".format(basequant, plottitle)
                     diffquant=diffquant.replace(' ','_')
                     basequant=basequant.replace(' ','_')
                     bkey = pkey.replace(diffquant, basequant)
                     if self.goodkey(bkey):
                         yb = np.array(self.yvariable[bkey])
-                        if self.optionDiurnalPlot.get() in [1, 2]:
+                        if diurnalop in [1, 2]:
                             yb = solfac*(yb[isza]*(1-wt)+yb[iszap]*wt)
-                        elif self.optionDiurnalPlot.get() == 3:
+                        elif diurnalop == 3:
                             junk, yb = self.DiurnalAverage(lats, solfacarr, timearr, wszaarr, yb)
-                        elif self.optionDiurnalPlot.get() == 4:
+                        elif diurnalop == 4:
                             junk, yb = self.DiurnalAverage(days, solfacarr, timearr, wszaarr, yb)
 
                         if self.optionComparisonPlot.get() == 1:
                             y -= yb
                         elif self.optionComparisonPlot.get() == 2:
-                            y /= yb
+                            y /= np.where(yb>0, yb, 1e-6*y)
                             ylabel = 'Ratio'
 
                 if intensity:
@@ -1126,7 +1126,7 @@ class RunRT:
             wszaarr.append(wsza)
             solfacarr.append(solfac)
             timearr.append(time)
-        return solfacarr, timearr, wszaarr
+        return date, solfacarr, timearr, wszaarr
 
     def DiurnalAverage(self, lats, solfacarr, timearr, wszaarr, y):
         '''
@@ -1193,7 +1193,7 @@ class RunRT:
                         if self.optionComparisonPlot.get() == 1:
                             x = [a-b for a,b in zip(x,self.yvariable[bkey][:])]
                         elif self.optionComparisonPlot.get() == 2:
-                            x = [a/b for a,b in zip(x,self.yvariable[bkey][:])]
+                            x = [a/b if b>0 else 1e-6 for a,b in zip(x,self.yvariable[bkey][:])]
                             xlabel = 'Ratio'
 
                     else:
@@ -1665,13 +1665,13 @@ class RunRT:
         :return:
         """
         if self.runname:
-            name = self.runname
+            name = "RUNS{}{}.{}".format(os.path.sep, self.runname, 'pkl')
         else:
-            name = 'sbrt'
-        fh = tkFileDialog.asksaveasfile(mode='wb', initialfile=self.runname, defaultextension=".pkl",
-                                        filetypes=(("pkl files", "*.pkl"), ("all files", "*.*")))
-        obj = [self.xvariable, self.yvariable]
-        pickle.dump(obj, fh)
+            name = "RUNS{}{}.{}".format(os.path.sep, 'sbrt', 'pkl')
+        with open(name, 'wb') as fh:
+            obj = [self.xvariable, self.yvariable]
+            pickle.dump(obj, fh, -1)
+            self.PreviewLine('Pickle file, {}, saved'.format(name))
 
     def ValidateCommands(self):
         """
