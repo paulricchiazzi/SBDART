@@ -86,6 +86,7 @@ At this point the command entry box should look like,
 #
 TCLOUD=0;10;20;30;40;50;60;70;80;90
 SZA=0;10;20;30;40;50;60;70;80
+IOUT=10
 
 The first two lines are comment fields that can be changed as desired
 to provide descriptive information.  The lines that don't start with
@@ -395,36 +396,20 @@ IOUT=10
      * Pressing File -> Pickle Save, writes the run data to a pickle
        file.  The file will be saved in python's object serialization
        format.  The pickle file (.pkl suffix) provides an easy way to
-       import the SBDART run data into an ipython session.  For
-       example, run and save Example2, above, as example2.pkl.  Then
-       the SBDART data may be imported into an ipython session as
-       follows:
+       import the SBDART run data into an ipython session.  To simplify
+       the process a short import utility, named RtRestore.py, is
+       provided in the RunRT directory.  As an example of how to recover
+       data in an interactive session,  run and save Example2, above,
+       as example2.pkl.  Then start an ipython session in another
+       window, and issue the following commands,
 
 $ ipython
-Python 2.7.10 (default, Feb  7 2017, 00:08:15)
-Type "copyright", "credits" or "license" for more information.
 
-IPython 2.0.0-dev -- An enhanced Interactive Python.
-?         -> Introduction and overview of IPython's features.
-%quickref -> Quick reference.
-help      -> Python's own help system.
-object?   -> Details about 'object', use 'object??' for extra details.
-
-In [1]: import pickle
-In [2]: fh = open('example2.pkl', 'rb')
-In [3]: x,y=pickle.load(fh)
-
-        The x variable in this case is a vector of spectral values
-        from 6 to 14 um.  The y variable is a python dictionary, with
-        keys built from of RT run parameters.  The values of
-        dictionary are the different y vectors corresponding to the
-        spectral variation of x.  The keys can be listed using this
-        command,
-
-In [4]: y.keys()
-
-        and plots can be produced by naming a particular y-vector:
-
+In [1]: import RtRestore as rtr
+In [2]: p=rtr.RtRestore()  # hit a return to get the last created
+                           # pkl file listed in the menu
+In [3]: x = p.data['WL']
+In [4]: y = p.data['TOPUP BTEMP=330 UW=8']
 In [5]: %pylab
-In [6]: plot(x,y['TOPUP BTEMP=330 UW=8'])
+In [6]: plot(x,y)
 

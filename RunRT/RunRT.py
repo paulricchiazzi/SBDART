@@ -194,7 +194,6 @@ class RunRT:
         self.addvariant.bind(self.rightmouse, self.NewRtParm)
         self.addvariant.pack(pady=5)
         v8.pack(side='left')
-        #self.addvariant_ttp = CreateToolTip.CreateToolTip(self.addvariant, "Run the SBDART")
 
         self.abortbtn = Button(v8, width=10, text='Abort', command=self.AbortRun)
 
@@ -209,7 +208,6 @@ class RunRT:
         self.yautoscale = BooleanVar()
         self.yaxisautoscale = Checkbutton(self.frameplotcontrols, text="Y-Autoscale", variable=self.yautoscale,command=self.Plotit)
         self.yaxisautoscale.pack(side='left')
-
 
         # set up canvas
 
@@ -248,7 +246,6 @@ class RunRT:
             self.LoadFile(filename=filename)
             if not os.path.isfile(sbdartexe):
                 self.Popup(self.framegraph, "Path to SBDART executable is not correct\nReplace line 25 of RunRT with correct path", wait=True)
-
         except:
             pass
 
@@ -521,10 +518,7 @@ class RunRT:
     def ShowChoice(self, event):
         var = event.widget.get().split('=')[0]
         cycleseq = self.geninput.CycleSequence()
-
         self.variant_to_plot = cycleseq.index(var)
-
-
         self.SetGroupMenu()
         self.PreviewLine("")
         try:
@@ -563,9 +557,7 @@ class RunRT:
                         two spinboxes are created to select the "C" and "D" values
         :return:
         """
-
         # self.plot_sequence = tags
-
         # consider tags as:
         # tags=[['A=0','A=1'],['B=2','B=3], ['C=4','C=5'], ['D=6', 'D=7']
         ichk = self.variant_to_plot
@@ -1537,7 +1529,7 @@ class RunRT:
         self.optionComparisonPlot.set(0)
         self.optionDiurnalPlot.set(0)
         self.PreviewLine("")
-        self.AddRtParm()
+        #self.AddRtParm()
 
     def AddRtParm(self):
         parm = self.selectvariant.get()
@@ -1548,13 +1540,6 @@ class RunRT:
         if parm in newcmd:  # this test prevents copying bogus info messages
             if not cmds.startswith("#"):
                 self.caption.insert("end", "# Description: \n#\n")
-                # if ";" in newcmd:
-                #     self.caption.insert("end", "# Description: \n#\n")
-                # else:
-                #     self.PreviewLine("First parameter must vary", justify='center')
-                #     root.bell()
-                #     return
-
             if self.ParmNotFound(cmds, parm):
                 self.caption.insert("end", newcmd + "\n")
             else:
@@ -1669,8 +1654,27 @@ class RunRT:
         else:
             name = "RUNS{}{}.{}".format(os.path.sep, 'sbrt', 'pkl')
         with open(name, 'wb') as fh:
-            obj = OrderedDict(self.yvariable)
-            obj[self.xlabel] = np.array(self.xvariable).astype(float)
+            iout = int(self.geninput.IOUTformat)
+            if iout == 10:
+                obj = OrderedDict(self.yvariable)
+                obj[self.xlabel] = np.array(self.xvariable).astype(float)
+            elif iout in [20,21]:
+                obj = OrderedDict(self.yvariable)
+            else:
+                if iout == 11:
+                    ky = 'ZZ'
+                elif iout in [1,2]:
+                    ky = 'WL'
+                obj = OrderedDict()
+                xvec = []
+                for key in self.yvariable:
+                    if key.startswith(ky):
+                        if not xvec:
+                            xvec = self.yvariable[key]
+                    else:
+                        obj[key]=self.yvariable[key]
+                obj[ky]=xvec
+
             pickle.dump(obj, fh, -1)
             self.PreviewLine('Pickle file saved to {}'.format(name))
 
@@ -1731,8 +1735,6 @@ class RunRT:
             return False
         else:
             return True
-
-
 
     def GetParmsInCmd(self, **kwargs):
         '''
