@@ -19,27 +19,57 @@ import numpy as np
 from datetime import datetime
 
 def unpickle(file=''):
+    '''
+    load a RunRT pickle file into an ipython session
+    :param file   name of pickle file, if not specified a menu of possibilities is offered.
+    :return:
+        x  -- the x vector
+        y  -- a dictionary of y vectors
+    '''
     if not file:
         files = os.listdir('RUNS')
-        fdict = {}
+        filename = {}
+        filesize = {}
         for f in files:
             if f.endswith('.pkl'):
                 fn = 'RUNS{}{}'.format(os.path.sep, f)
                 mtime = os.path.getctime(fn)
-                fdict[mtime] = fn
-        for i,k in enumerate(sorted(fdict.keys())):
+                filename[mtime] = fn
+                filesize[mtime] = os.path.getsize(fn)
+        for i,k in enumerate(sorted(filename.keys())):
             date = datetime.fromtimestamp(k).strftime('%Y-%m-%d %H:%M:%S')
-            print '{:5} {:60} {}'.format(i,fdict[k],date)
-        print ''
-        answ = raw_input("Enter number or return to cancel: ")
+            size = filesize[k]
+            if size < 1000000:
+                size = '{}KB'.format(size/1000)
+            elif size < 1000000000:
+                size = '{}MB'.format(size/1000000)
+            else:
+                size = '{}GB'.format(size/1000000000)
 
-        if answ.isdigit() and int(answ) in range(len(fdict)):
+            print '{:5}   {:19}  {:>5}  {}'.format(i, date, size, filename[k])
+        print ''
+        answ = raw_input("Enter number, <Return>=get most recent, q=abort): ")
+
+        if answ.isdigit() and int(answ) in range(len(filename)):
             j = int(answ)
-            file = fdict[sorted(fdict.keys())[j]]
+            file = filename[sorted(filename.keys())[j]]
+        elif answ == '':
+            j=len(filename)-1
+            file = filename[sorted(filename.keys())[j]]
         else:
             return [None, None]
+
+
     with open(file, 'rb') as fh:
-        x,y = pickle.load(fh)
-        x=np.array(x).astype(float)
-        print y.keys()
-        return x,y
+        return pickle.load(fh)
+
+def getkeys(y, pat=''):
+    kys = []
+    for k in y.keys():
+        addit = True
+        for p in pat.split('*'):
+            if not p in k:
+                addit = False
+        if addit:
+            kys.append(k)
+    return kys
