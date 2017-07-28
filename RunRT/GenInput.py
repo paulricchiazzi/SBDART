@@ -93,7 +93,7 @@ class GenInput:
                         # note that xvariable is set here for IOUT=10,
                         # it is reset in Plot01 and Plot11 to wavelength and altitude, respectively
                         xvariable = values[:]
-                        xlabel = parm
+                        xlabel = str(parm)
                 else:
                     self.rtcons[parm]=rhs
         return xvariable, xlabel

@@ -1669,9 +1669,10 @@ class RunRT:
         else:
             name = "RUNS{}{}.{}".format(os.path.sep, 'sbrt', 'pkl')
         with open(name, 'wb') as fh:
-            obj = [self.xvariable, self.yvariable]
+            obj = OrderedDict(self.yvariable)
+            obj[self.xlabel] = np.array(self.xvariable).astype(float)
             pickle.dump(obj, fh, -1)
-            self.PreviewLine('Pickle file, {}, saved'.format(name))
+            self.PreviewLine('Pickle file saved to {}'.format(name))
 
     def ValidateCommands(self):
         """

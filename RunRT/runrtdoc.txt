@@ -256,8 +256,8 @@ IOUT=21
    plot origin it adjusts the lower limit of the plot.  If the roll
    event occurs near the max, it controls the max extent of the axis.
    The sense of the roll (either up or down) determines whether the
-   limit is increased or decreased.  The effect of the axis scaling is
-   removed by toggling the y-autorange checkbox.
+   limit is increased or decreased.  The effect of the axis scaling
+   persists until the y-autorange checkbox is toggled.
 
 2) If SBDART fails to complete the full RunRT command sequence, the
    last attempted RT command sequence is saved in a file
@@ -342,7 +342,7 @@ IOUT=1
    subtracted or divided out of all other lines in the plot.  Pressing
    the 'No comparison plots' will restore the default plots.
 
-9)SBDART can be used to plot the diurnal variation of solar flux at a
+9) SBDART can be used to plot the diurnal variation of solar flux at a
    given latitutude and longitude as a function of time.  The first
    step is to compute a sequence of SBDART IOUT=10 calculations
    (irradiance at the top and bottom of the atmosphere) with SZA as the
@@ -352,7 +352,9 @@ IOUT=1
 
    * Nominal                   return to normal plotting
    * Hourly irradiance         irradiance as a function of time of day
-   * Hourly irradiance (fine)  irradiance as a function of time of day
+   * Hourly irradiance (fine)  irradiance as a function of time of day.
+                               Fine scale specification of latitude and
+                               longitude.
    * Diurnal average vs lat    average irradiance over day vs latitude
    * Diurnal average vs day    average irradiance over day vs day of year
 

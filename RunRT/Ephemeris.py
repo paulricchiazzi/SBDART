@@ -86,7 +86,7 @@ class SolarEphemeris:
     def suntimes(self, iday):
         '''
         get times of local noon and day duration
-        :param iday:
+        :param iday:    scalar integer
         :return:
          noon       universal time at which sun is highest in the sky
          daylight   total number of daylight hours
@@ -119,7 +119,16 @@ class SolarEphemeris:
             p1=p0+np.pi if p0 < np.pi else p0-np.pi
         noon = (sunlon-p1/self.dtor)/15
 
-        tanfac = 1.0/(np.tan(t0)*np.tan(t1))
+        tanfac = np.tan(t0)*np.tan(t1)
+        if tanfac == 0:
+            if cosfac > 0:
+                daylight = 24
+            else:
+                daylight = 0
+            return noon, daylight
+        else:
+            tanfac = 1/tanfac
+
         if tanfac > 1:
             daylight = 24
         elif tanfac < -1:
