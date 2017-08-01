@@ -61,8 +61,8 @@ class RunRT:
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Recover", command=lambda: self.LoadFile("RUNS/~RunRT.sbd"))
         self.filemenu.add_command(label="Open", command=self.LoadFile)
-        self.filemenu.add_command(label="Save", command=self.WriteFile)
-        self.filemenu.add_command(label="Pickle Save", command = self.PickleSave)
+        self.filemenu.add_command(label="Write", command=self.WriteFile)
+        self.filemenu.add_command(label="Save", command = self.PickleSave)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="View Output", command=self.ViewOutput)
         self.filemenu.add_command(label="Save plot as PNG", command = lambda choice = 'Save': self.PlotData(choice))
@@ -915,13 +915,15 @@ class RunRT:
             plottitle = pdict[pkey][3]
             rtkey=pkey.split()[0]
             wlkey = pkey.replace(rtkey, "WL", 1)
+            if not wlkey in self.yvariable.keys():
+                wlkey = "WL"
             ylabel = self.parser.rtunits[rtkey]
             xlabel = "$Wavelength (\mu m)$"
             iswavenumber = self.parser.menucheck.has_key(' Wavenumber') and self.parser.menucheck[' Wavenumber'].get()
             isefftemp = self.parser.menucheck.has_key(' EffectiveTemp') and self.parser.menucheck[' EffectiveTemp'].get()
-            if self.goodkey(wlkey) and self.goodkey(pkey):
-                x = self.yvariable[wlkey][:]
-                self.xvariable = x
+            x = self.yvariable[wlkey][:]
+            self.xvariable = x
+            if self.goodkey(pkey):
                 y = self.yvariable[pkey][:]
 
                 if basequant:
@@ -1166,11 +1168,13 @@ class RunRT:
             rtkey=pkey.split()[0]
             phikey = pkey.replace(rtkey, "FFEW")
             zkey=pkey.replace(rtkey, "ZZ")
+            if not zkey in self.yvariable.keys():
+                zkey = 'ZZ'
+            y = self.yvariable[zkey]
             ylabel = "Altitude (km)"
             xlabel = self.parser.rtunits[rtkey]
             intensity = self.parser.menucheck[" Intensity"].get()
-            if self.goodkey(zkey) and self.goodkey(pkey):
-                y = self.yvariable[zkey]
+            if self.goodkey(pkey):
                 x = self.yvariable[pkey][:]
                 self.xvariable = x
 
@@ -1594,35 +1598,82 @@ class RunRT:
         """
         if not filename:
             filename = tkFileDialog.askopenfilename(defaultextension='.sbd',
-                                                filetypes=[('all files', '.*'), ('sbd files', '.sbd')])
+                                                filetypes=[('pkl files', '.pkl'), ('sbd files', '.sbd')])
         if filename:
             self.sbdartoutput = ""
             self.caption.delete('1.0', 'end')
             basename = self.GetRootName(filename)
+            self.master.title("SBDART {}".format(self.runname))
             self.runbtn.config(state="disabled")
             try:
                 self.runname = basename
-                self.master.title("SBDART {}".format(self.runname))
-                fh = open(filename, "r")
-                cmd = fh.read()
-                fh.close()
-                ind = cmd.find("_DATA_")
-                if ind < 0:
-                    self.caption.insert('1.0', cmd)
+                if filename.endswith('sbd'):
+                    self.load_flat_file(filename)
                 else:
-                    # self.addedparms = self.GetAddedParms(cmd[0: ind - 1])
-                    self.caption.insert('1.0', cmd[0:ind - 1])
-                    root.update()
-                    self.sbdartoutput = cmd[ind + 7:]
-                    if self.RtLoops(ingest=True):
-                        self.Plotit()
-                if len(cmd) < 300000:         # if its a short file, save filename for later recovery
-                    with open("RecentFile", 'w') as myfile:
-                        myfile.write(filename)
+                    self.load_pickle_file(filename)
 
             except:
                 self.caption.insert('1.0', "\n\n     File {} could not be read".format(filename))
         self.runbtn.config(state="normal")
+
+    def load_flat_file(self, filename):
+        '''
+        load sbdart output in flat format
+        :param basename:
+        :param filename:
+        :return:
+        '''
+        fh = open(filename, "r")
+        sbdout = fh.read()
+        fh.close()
+        ind = sbdout.find("_DATA_")
+        if ind < 0:
+            self.caption.insert('1.0', sbdout)
+        else:
+            # self.addedparms = self.GetAddedParms(cmd[0: ind - 1])
+            self.caption.insert('1.0', sbdout[0:ind - 1])
+            root.update()
+            self.sbdartoutput = sbdout[ind + 7:]
+            if self.RtLoops(ingest=True):
+                self.Plotit()
+        if len(sbdout) < 300000:  # if its a short file, save filename for later recovery
+            with open("RecentFile", 'w') as myfile:
+                myfile.write(filename)
+
+    def load_pickle_file(self, filename):
+        '''
+        load sbdart output in pickle format
+        :param basename:
+        :param filename:
+        :return:
+        '''
+        with open(filename, 'rb') as fh:
+            sbdout = pickle.load(fh)
+            if 'COMMAND' in sbdout.keys():
+                cmd = sbdout['COMMAND']
+            else:
+                print("keys in picklefile: ")
+                for k in sbdout.keys():
+                    print k
+                    root.quit()
+
+            self.caption.insert('1.0', cmd)
+            root.update()
+            self.yvariable=OrderedDict(sbdout)
+            self.yrange=[float('inf'), float('-inf')]
+            self.optionComparisonPlot.set(0)
+            self.optionDiurnalPlot.set(0)
+            self.diffbase = ''
+            self.PreviewLine('')
+            self.sbdartoutput = ""
+            self.xvariable, self.xlabel = self.geninput.CycleSetup(cmd)
+            self.parser = RtReader.RtReader(cmd, BooleanVar)
+            self.SetRtMenu()
+            self.SetGroupMenu()
+            self.Plotit()
+        if sys.getsizeof(sbdout) < 300000:  # if its a short file, save filename for later recovery
+            with open("RecentFile", 'w') as myfile:
+                myfile.write(filename)
 
     def WriteFile(self):
         """
@@ -1634,7 +1685,7 @@ class RunRT:
         else:
             name = 'sbrt'
         fh = tkFileDialog.asksaveasfile(mode='w', initialfile=self.runname, defaultextension=".sbd",
-                                        filetypes=(("sbd files", "*.sbd"), ("all files", "*.*")))
+                                        filetypes=(("sbd files", "*.sbd")))
         if fh:
             txt = self.caption.get('1.0', 'end')
             fh.writelines(txt)
@@ -1653,13 +1704,21 @@ class RunRT:
             name = "RUNS{}{}.{}".format(os.path.sep, self.runname, 'pkl')
         else:
             name = "RUNS{}{}.{}".format(os.path.sep, 'sbrt', 'pkl')
+
+        fh = tkFileDialog.asksaveasfile(mode='w', initialfile=self.runname, defaultextension=".sbd",
+                                        filetypes=(("pkl files", "*.pkl")))
+
+
         with open(name, 'wb') as fh:
+            cmd = self.caption.get('1.0', 'end')
             iout = int(self.geninput.IOUTformat)
             if iout == 10:
                 obj = OrderedDict(self.yvariable)
+                obj['COMMAND'] = cmd
                 obj[self.xlabel] = np.array(self.xvariable).astype(float)
             elif iout in [20,21]:
                 obj = OrderedDict(self.yvariable)
+                obj['COMMAND'] = cmd
             else:
                 if iout == 11:
                     ky = 'ZZ'
@@ -1673,10 +1732,11 @@ class RunRT:
                             xvec = self.yvariable[key]
                     else:
                         obj[key]=self.yvariable[key]
+                obj['COMMAND'] = cmd
                 obj[ky]=xvec
 
             pickle.dump(obj, fh, -1)
-            self.PreviewLine('Pickle file saved to {}'.format(name))
+            self.runname = self.GetRootName(fh.name)
 
     def ValidateCommands(self):
         """
@@ -1888,10 +1948,13 @@ class RunRT:
             self.parser.RT(out, label, self.yvariable)
             if self.abortit:
                 return False
+
         self.PreviewLine("")
         self.SetRtMenu()
         self.SetGroupMenu()
         return True
+
+
 
     def RunSBDART(self):
         for fn in glob.glob("SBDART_WARNING*"):

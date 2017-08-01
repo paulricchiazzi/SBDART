@@ -393,15 +393,24 @@ IOUT=10
        clipboard in a format that may be used directly in an python
        (or ipython) script.  The clipboard will contain text that
 
-     * Pressing File -> Pickle Save, writes the run data to a pickle
-       file.  The file will be saved in python's object serialization
-       format.  The pickle file (.pkl suffix) provides an easy way to
-       import the SBDART run data into an ipython session.  To simplify
-       the process a short import utility, named RtRestore.py, is
-       provided in the RunRT directory.  As an example of how to recover
-       data in an interactive session,  run and save Example2, above,
-       as example2.pkl.  Then start an ipython session in another
-       window, and issue the following commands,
+     * There are two ways save the results of a RunRT run.
+
+       Pressing 'File -> Write' saves the run in an ascii format that is
+       human readable, but not very expedient, since it requires a fair
+       bit of time to re-parse the file each time its re-loaded. The output
+       file suffix for this format option is '.sbd'
+
+       Pressing 'File -> save' writes the run data to disk in Python's
+       object serialization format, pickle.  This binary format is much
+       faster to re-load.
+
+       The pickle file (.pkl suffix) provides an easy way to import the
+       SBDART run data into an ipython session.  To simplify the process a
+       short import utility, named RtRestore.py, is provided in the RunRT
+       directory.  As an example of how to recover data in an interactive
+       session, run and save Example2, above, as example2.pkl.  Then start
+       an ipython session in another window, and issue the following
+       commands,
 
 $ ipython
 
