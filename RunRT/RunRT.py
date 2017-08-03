@@ -4,7 +4,7 @@ if len(sys.argv) == 1:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
-    from Tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, Toplevel, Text, Entry, Checkbutton, Label
+    from Tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label
     import tkFileDialog
     import Ephemeris
     import Spinner
@@ -32,18 +32,18 @@ class RunRT:
 
         self.sbdartexe = sbdartexe
 
-        self.geninput = GenInput.GenInput()  # instance of GenInput class
-        self.rtdocwindow = None  # help popup window object
-        self.rtdoctext = None  # help text object
-        self.runname = "sbrt"  # run name
-        self.sbdartoutput = ""  # sbdart output text buffer
-        self.variant_to_plot = 0  # variant parameter included on plot
-        self.groupmenuSpinners = []  # plot group spin boxes
-        self.optionSpinners = []     # sza to hour option spin boxes
-        self.yrange = [float('inf'), float('-inf')]
-        self.plotwindow=[]   # xmin,ymin,xmax,ymax
-        self.colorbarzoom=[]  # normalized zmin,zmax,dzmin,dzmax
+        self.geninput = GenInput.GenInput()     # instance of GenInput class
+        self.rtdocwindow = None                 # help popup window object
+        self.rtdoctext = None                   # help text object
+        self.runname = "runrt"                  # run name
+        self.sbdartoutput = ""                  # sbdart output text buffer
+        self.variant_to_plot = 0                # variant parameter included on plot
+        self.groupmenuSpinners = []             # plot group spin boxes
+        self.optionSpinners = []                # sza to hour option spin boxes
+        self.plotwindow=[]                      # xmin,ymin,xmax,ymax
+        self.colorbarzoom=[]                    # normalized zmin,zmax,dzmin,dzmax
         self.plottype = 'xy'
+        self.yrange = [float('inf'), float('-inf')]
         self.FixRangeStep = 0
         self.abortit = False
         self.rectXY = (0.125,0.1,0.9,0.9)
@@ -55,14 +55,15 @@ class RunRT:
         # end properties
 
         self.master = master
-        master.title("SBDART " + self.runname)
+        master.title(self.runname)
 
         self.menubar = Menu(master)
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Recover", command=lambda: self.LoadFile("RUNS/~RunRT.sbd"))
         self.filemenu.add_command(label="Open", command=self.LoadFile)
         self.filemenu.add_command(label="Write", command=self.WriteFile)
-        self.filemenu.add_command(label="Save", command = self.PickleSave)
+        self.filemenu.add_command(label="Save as", command = self.PickleSave)
+        self.filemenu.add_command(label="Save", command = lambda sfile = self.runname : self.PickleSave(sfile))
         self.filemenu.add_separator()
         self.filemenu.add_command(label="View Output", command=self.ViewOutput)
         self.filemenu.add_command(label="Save plot as PNG", command = lambda choice = 'Save': self.PlotData(choice))
@@ -265,17 +266,21 @@ class RunRT:
         ylbls1 = []
         ydata = []
         xdata = None
-
+        title = self.ax.get_title()
         for curve in self.ax.get_lines():
             ylbls0.append(curve.get_label().split()[0])
             ylbls1.append(curve.get_label().split(' ',1)[1])
             xdata = curve.get_xdata()
             ydata.append(curve.get_ydata())
         if choice == 'View':
+            w=11                # width of each column
+            ws=str(w)
             nc = len(ylbls0)
-            fm1 = ' ' * 11 + '\t{:11}' * nc + '\n'
-            fm2 = '\n{:11.3e}' + '\t{:11.3e}' * nc
-            txt = fm1.format(*ylbls0)
+            tpad = (w*(nc+1)-len(title))/2
+            txt = ' '*tpad + title +'\n\n'
+            fm1 = ' ' * w + ('\t{:' + ws + '}') * nc + '\n'
+            fm2 = '\n{:'+ws+'.3e}' + ('\t{:'+ws+'.3e}') * nc
+            txt += fm1.format(*ylbls0)
             txt += fm1.format(*ylbls1)
             for i, x in enumerate(xdata):
                 y = []
@@ -1544,17 +1549,18 @@ class RunRT:
         if parm in newcmd:  # this test prevents copying bogus info messages
             if not cmds.startswith("#"):
                 self.caption.insert("end", "# Description: \n#\n")
+
             if self.ParmNotFound(cmds, parm):
                 self.caption.insert("end", newcmd + "\n")
             else:
                 self.caption.delete(1.0,'end')
                 self.caption.insert(1.0, self.ReplaceParm(cmds, newcmd))
-            self.runbtn.config(state="normal")
 
+            self.master.title("+ "+self.runname)
+            root.update()
+            self.runbtn.config(state="normal")
         else:
             self.PreviewLine("Select a parameter", justify='center')
-
-            # self.PreviewLine("Select a parameter",40)
             root.bell()
 
     def ParmNotFound(self, cmds, parm):
@@ -1597,21 +1603,20 @@ class RunRT:
         :return:
         """
         if not filename:
-            filename = tkFileDialog.askopenfilename(defaultextension='.sbd',
-                                                filetypes=[('pkl files', '.pkl'), ('sbd files', '.sbd')])
+            filename = tkFileDialog.askopenfilename()
+#                        filetypes=[('pkl files', '*.pkl'), ('sbd files', '*.sbd'), ('all files','*.*')])
         if filename:
             self.sbdartoutput = ""
             self.caption.delete('1.0', 'end')
             basename = self.GetRootName(filename)
-            self.master.title("SBDART {}".format(self.runname))
             self.runbtn.config(state="disabled")
             try:
-                self.runname = basename
                 if filename.endswith('sbd'):
                     self.load_flat_file(filename)
                 else:
                     self.load_pickle_file(filename)
-
+                self.runname = basename.split('.')[0]
+                self.master.title(self.runname)
             except:
                 self.caption.insert('1.0', "\n\n     File {} could not be read".format(filename))
         self.runbtn.config(state="normal")
@@ -1668,6 +1673,9 @@ class RunRT:
             self.sbdartoutput = ""
             self.xvariable, self.xlabel = self.geninput.CycleSetup(cmd)
             self.parser = RtReader.RtReader(cmd, BooleanVar)
+            if self.parser.IOUT in [20,21]:
+                self.parser.zen = self.yvariable['ZEN']
+                self.parser.phi = self.yvariable['PHI']
             self.SetRtMenu()
             self.SetGroupMenu()
             self.Plotit()
@@ -1680,12 +1688,8 @@ class RunRT:
         Write current command file to a sbd file
         :return:
         """
-        if self.runname:
-            name = self.runname
-        else:
-            name = 'sbrt'
-        fh = tkFileDialog.asksaveasfile(mode='w', initialfile=self.runname, defaultextension=".sbd",
-                                        filetypes=(("sbd files", "*.sbd")))
+        fh = tkFileDialog.asksaveasfile(mode='w', initialdir = "RUNS", defaultextension=".sbd",
+                                        filetypes=(("sbd files", "*.sbd"), ("All files", "*.*")), title='Write File')
         if fh:
             txt = self.caption.get('1.0', 'end')
             fh.writelines(txt)
@@ -1695,21 +1699,23 @@ class RunRT:
             fh.close()
             self.runname = self.GetRootName(fh.name)
 
-    def PickleSave(self):
+    def PickleSave(self, mode = 'saveas'):
         """
         Write current command file to a sbd file
         :return:
         """
-        if self.runname:
-            name = "RUNS{}{}.{}".format(os.path.sep, self.runname, 'pkl')
+
+        if mode == 'saveas':
+            fh = tkFileDialog.asksaveasfile(mode='wb', initialdir = 'RUNS', defaultextension=".pkl",
+                                            filetypes=(("pkl files", "*.pkl"), ("All files", "*.*")), title='Save File')
+            self.runname = str(os.path.basename(fh.name))
+            if '.' in self.runname:
+                self.runname = self.runname.split('.')[0]
         else:
-            name = "RUNS{}{}.{}".format(os.path.sep, 'sbrt', 'pkl')
+            name =  "RUNS{}{}{}".format(os.path.sep, self.runname,'.pkl')
+            fh = open(name, 'wb')
 
-        fh = tkFileDialog.asksaveasfile(mode='w', initialfile=self.runname, defaultextension=".sbd",
-                                        filetypes=(("pkl files", "*.pkl")))
-
-
-        with open(name, 'wb') as fh:
+        if fh:
             cmd = self.caption.get('1.0', 'end')
             iout = int(self.geninput.IOUTformat)
             if iout == 10:
@@ -1719,6 +1725,8 @@ class RunRT:
             elif iout in [20,21]:
                 obj = OrderedDict(self.yvariable)
                 obj['COMMAND'] = cmd
+                obj['ZEN'] = self.parser.zen
+                obj['PHI'] = self.parser.phi
             else:
                 if iout == 11:
                     ky = 'ZZ'
@@ -1736,7 +1744,9 @@ class RunRT:
                 obj[ky]=xvec
 
             pickle.dump(obj, fh, -1)
-            self.runname = self.GetRootName(fh.name)
+            fh.close()
+            self.master.title(self.runname)
+            root.update()
 
     def ValidateCommands(self):
         """
@@ -1969,6 +1979,9 @@ class RunRT:
             try:
                 if self.RtLoops():
                     self.Plotit()
+                    self.master.title("* "+self.runname)
+                    root.update()
+
             except:
                 self.PreviewLine("No plots available.", justify='center')
                 self.ViewOutput()

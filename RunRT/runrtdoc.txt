@@ -333,7 +333,7 @@ IOUT=1
    'ALL') will show up in the line labels, but the psuedo variant _Abs
    will not.
 
-7) Moving the mouse cursor near a plot line hilights the line both on
+7) Moving the mouse cursor near a plot line hi-lights the line both on
    the plot and in the legend.  This is helpful when the color of
    plotted lines are hard to distinguish.
 
@@ -386,7 +386,7 @@ IOUT=10
        written to a PNG file in the same directory as .sbd output files.
        The name of the plot will be derived from the run name associated
        with the scenario.  If no run name has been set, the default run
-       name of 'sbrt.sbd' is used. (Run names are set when the RunRT
+       name of 'runrt.png' is used. (Run names are set when the RunRT
        scenario is saved.)
 
      * Pressing File -> Copy Plot Data, copies the plot data to the
@@ -395,14 +395,16 @@ IOUT=10
 
      * There are two ways save the results of a RunRT run.
 
-       Pressing 'File -> Write' saves the run in an ascii format that is
-       human readable, but not very expedient, since it requires a fair
-       bit of time to re-parse the file each time its re-loaded. The output
-       file suffix for this format option is '.sbd'
+       Pressing 'File -> Write' saves the run in an ascii format that
+       is human readable, and may be easier to adapt for use in non-
+       python post-processing solfware.  However, the ascii format is
+       not expedient, since it requires a fair bit of time to re-parse
+       the file each time it's re-loaded. The ascii files are written
+       with a '.sbd' file suffix.
 
        Pressing 'File -> save' writes the run data to disk in Python's
        object serialization format, pickle.  This binary format is much
-       faster to re-load.
+       faster to re-load the the '.sbd' files.
 
        The pickle file (.pkl suffix) provides an easy way to import the
        SBDART run data into an ipython session.  To simplify the process a
