@@ -96,11 +96,10 @@ class RtReader:
 
     def RT_01_setup(self):
         self.rtkeys = ["WL", "FFEW", "TOPDN", "TOPUP", "TOPDIR", "BOTDN", "BOTUP", "BOTDIR", "TOPFLUX", "BOTFLUX", "ABSORPTION"]
-        self.rtunits = {" Wavenumber":"", " EffectiveTemp":"",
+        self.rtunits = {" Wavenumber":"", " EffectiveTemp":"", " Transmitted":"",
                         "TOPDN":"$W/m^2/\mu m$",   "TOPUP": "$W/m^2/\mu m$",  "TOPDIR": "$W/m^2/\mu m$",
                         "BOTDN":"$W/m^2/\mu m$",   "BOTUP":"$W/m^2/\mu m$",   "BOTDIR":"$W/m^2/\mu m$",
-                        "TOPFLUX":"$W/m^2/\mu m$", "BOTFLUX":"$W/m^2/\mu m$", "ABSORPTION":"$W/m^2/\mu m$",
-                        }
+                        "TOPFLUX":"$W/m^2/\mu m$", "BOTFLUX":"$W/m^2/\mu m$", "ABSORPTION":"$W/m^2/\mu m$"}
         self.intensity=False
         self.rtdefault="TOPUP"
 
@@ -159,7 +158,8 @@ class RtReader:
 
     def RT_10_setup(self):
         self.rtkeys = ["WLINF","WLSUP","FFEW","TOPDN", "TOPUP", "TOPDIR", "BOTDN", "BOTUP", "BOTDIR", "TOPFLUX", "BOTFLUX", "ABSORPTION"]
-        self.rtunits = {" Intensity":True, "TOPDN": "$W/m^2$", "TOPUP": "$W/m^2$", "TOPDIR": "$W/m^2$",
+        self.rtunits = {" Intensity":True, " Transmitted":False,
+                        "TOPDN": "$W/m^2$", "TOPUP": "$W/m^2$", "TOPDIR": "$W/m^2$",
                         "BOTDN":"$W/m^2$",   "BOTUP":"$W/m^2$",   "BOTDIR":"$W/m^2$",
                         "TOPFLUX":"$W/m^2$", "BOTFLUX":"$W/m^2$", "ABSORPTION":"$W/m^2$"}
         self.intensity=True

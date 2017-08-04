@@ -65,10 +65,10 @@ class RunRT:
         self.filemenu.add_command(label="Save as", command = self.PickleSave)
         self.filemenu.add_command(label="Save", command = lambda sfile = self.runname : self.PickleSave(sfile))
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="View Output", command=self.ViewOutput)
+        #self.filemenu.add_command(label="View Output", command=self.ViewOutput)
         self.filemenu.add_command(label="Save plot as PNG", command = lambda choice = 'Save': self.PlotData(choice))
         self.filemenu.add_command(label="View Plot Data", command = lambda choice = 'View': self.PlotData(choice))
-        self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
+        #self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
         self.menubar.add_cascade(label="File",menu=self.filemenu)
 
         self.optionmenu = Menu(self.menubar, tearoff=0)
@@ -204,7 +204,13 @@ class RunRT:
         self.ShowPreview()
         self.previewbox.pack(fill='x', side='bottom', expand=1)
 
-        # y-axis autoscale toggle
+        # show legend checkbox
+
+        self.showlegendVar = BooleanVar(value=True)
+        self.showlegend = Checkbutton(self.frameplotcontrols, text="Show Legend", variable=self.showlegendVar,command=self.Plotit)
+        self.showlegend.pack(side='left')
+
+        # y-axis autoscale checkbox
 
         self.yautoscale = BooleanVar()
         self.yaxisautoscale = Checkbutton(self.frameplotcontrols, text="Y-Autoscale", variable=self.yautoscale,command=self.Plotit)
@@ -541,9 +547,13 @@ class RunRT:
         menu=self.fmenu
         parser=self.parser
         menu.delete(0, 'end')
+        seperator = True
         for k in sorted(parser.menucheck.keys()):
             if parser.rtdefault == k:
                 parser.menucheck[k].set(True)
+            if seperator and not k.startswith(' '):
+                menu.add_separator()
+                seperator = False
             menu.add_checkbutton(label=k, variable=parser.menucheck[k], onvalue=True, offvalue=False, command=lambda key=k: self.PlotGroup(key))
 
     def SetGroupMenu(self):
@@ -926,6 +936,7 @@ class RunRT:
             xlabel = "$Wavelength (\mu m)$"
             iswavenumber = self.parser.menucheck.has_key(' Wavenumber') and self.parser.menucheck[' Wavenumber'].get()
             isefftemp = self.parser.menucheck.has_key(' EffectiveTemp') and self.parser.menucheck[' EffectiveTemp'].get()
+            istransmit = self.parser.menucheck.has_key(' Transmitted') and self.parser.menucheck[' Transmitted'].get()
             x = self.yvariable[wlkey][:]
             self.xvariable = x
             if self.goodkey(pkey):
@@ -944,6 +955,13 @@ class RunRT:
                         elif self.optionComparisonPlot.get() == 2:
                             y = [a/b if b>0 else 1e-6 for a,b in zip(y,self.yvariable[bkey][:])]
                             ylabel = 'Ratio'
+
+                if istransmit:
+                    tpkey = pkey.replace(rtkey, "TOPDN")
+                    ylabel=''
+                    linelabel=linelabel.replace(rtkey, '{}/{}'.format(rtkey, 'TOPDN'))
+                    y = [yy / yyt if yyt > 0 else 0 for yy,yyt in zip(y, self.yvariable[tpkey][:])]
+
             else:
                 return
 
@@ -1044,8 +1062,17 @@ class RunRT:
             rtkey=pkey.split()[0]
             ylabel = self.parser.rtunits[rtkey]
             intensity = self.parser.menucheck[" Intensity"].get()
+            transmitted = self.parser.menucheck[" Transmitted"].get()
+
             if self.goodkey(pkey):
                 y = np.array(self.yvariable[pkey][:])
+                if transmitted:
+                    intensity=False
+                    ylabel=''
+                    topkey = pkey.replace(rtkey,'TOPDN')
+                    linelabel=linelabel.replace(rtkey, '{}/{}'.format(rtkey, 'TOPDN'))
+                    yt = np.array(self.yvariable[topkey][:])
+                    y = np.where(yt>0, y/yt, np.zeros(len(y)))
 
                 if diurnalop in [1, 2]:
                     y = solfac*(y[isza]*(1-wt)+y[iszap]*wt)
@@ -1053,7 +1080,6 @@ class RunRT:
                     x, y = self.DiurnalAverage(lats, solfacarr, timearr, wszaarr, y)
                 elif diurnalop == 4:
                     x, y = self.DiurnalAverage(days, solfacarr, timearr, wszaarr, y)
-
 
                 if basequant:
                     diffquant = linelabel[linelabel.find(' ')+1:]
@@ -1065,6 +1091,12 @@ class RunRT:
                     bkey = pkey.replace(diffquant, basequant)
                     if self.goodkey(bkey):
                         yb = np.array(self.yvariable[bkey])
+                        if transmitted:
+                            topkey = bkey.replace(rtkey,'TOPDN')
+                            #print 'bkey={}  topkey={}'.format(bkey, topkey)
+                            ytb = np.array(self.yvariable[topkey][:])
+                            yb = np.where(ytb>0, yb/ytb, np.zeros(len(yb)))
+
                         if diurnalop in [1, 2]:
                             yb = solfac*(yb[isza]*(1-wt)+yb[iszap]*wt)
                         elif diurnalop == 3:
@@ -1080,11 +1112,9 @@ class RunRT:
 
                 if intensity:
                     ylabel=self.parser.IntensityLabel(ylabel)
-                    for i in range(0, len(y)):
-                        ewkey = pkey.replace(rtkey, "FFEW")
-                        ffew = np.array(self.yvariable[ewkey])
-                        ffew = (ffew[isza]*(1-wt)+ffew[iszap]*wt)
-                        y /= ffew
+                    ewkey = pkey.replace(rtkey, "FFEW")
+                    ffew = self.yvariable[ewkey][0]
+                    y /= ffew
 
                 self.ax.plot(x, y, color=color, marker=marker, label=linelabel, markersize=3, picker=5)
 
@@ -1313,6 +1343,8 @@ class RunRT:
         return day, lat, lon
 
     def ShowLegend(self, numleg):
+        if not self.showlegendVar.get():
+            return
         if numleg < 5:
             self.leg = self.ax.legend(loc='best', fontsize='medium')
         elif numleg < 10:
@@ -1443,7 +1475,7 @@ class RunRT:
 
         if event.widget == self.rangesamples:
             v=int(self.rangesamples.get())
-            if event.delta > 0 and v < 30:
+            if event.delta > 0 and v < 40:
                 v+=1
             elif event.delta < 0 and v > 0:
                 v-=1
