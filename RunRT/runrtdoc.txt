@@ -1,21 +1,31 @@
         INTRODUCTION
 
-SBDART is a command line code.  It reads inputs from an input file
-(INPUT) and writes text output to stdout.  This mode of operation is
-useful for generating output for graphics postprocessors or for
-generating databases for remote sensing retrievals, but it is not very
-useful for students trying to understand how radiative transfer
-work. The RunRT graphical user interface is designed to fill this gap.
+SBDART has a large number of input parameters, which provides an
+experienced user a great deal of flexibility in specifying radiative
+transfer problems. SBDART is a command line code.  It reads control
+parameters from an input file (INPUT) and writes ASCII output to
+stdout.  This mode of operation is useful for generating output for
+graphics postprocessors or for generating databases for remote sensing
+retrievals, but it is not very useful for students trying to
+understand how radiative transfer works.
+
+The RunRT graphical user interface is designed to fill this gap.
 RunRT is a python 2.7 graphics code that makes it easy to run SBDART
 and display its output graphically in ways that bring out the
-essential features of the radiative transfer physics.
+essential features of the radiative transfer physics. The RunRT
+interface is quite simple, yet flexible enough to perform many of the
+computational problems that come up in climate science or remote
+sensing.  
 
-The RunRT interface is quite simple yet flexible enough to perform
-many of the computational problems that come up in climate science or
-remote sensing.  There are four entry boxes at the top of the RunRT
-user interface.  The first entry widget is used to select an SBDART
-input parameter, while the remaining 4 boxes are used to specify a
-range of variation and number of samples.
+One of the main barriers to getting started with new modeling software
+is the effort required to learn about which input parameters matter,
+and the typical range overwhich these parameters vary. To help ease
+this learning curve, the RunRT user interface provides a simple lookup
+system to suggest reasonable values for the input parameters the user
+decides to include in the SBDART run. There are four entry boxes at
+the top of the RunRT user interface.  The first entry widget is used
+to select an SBDART input parameter.  The remaining 4 boxes are used
+to specify a resonable sampling of its typical range of variation.
 
     AN EXAMPLE WITH INTEGRATED FLUX OUTPUT (IOUT=10)
 
@@ -379,36 +389,32 @@ IOUT=10
 
      * Pressing File -> View Plot Data, will display the current plot
        data to a popup window and save the data to the clipboard. The
-       clipboard information may also be further analyzed by pasteing
-       it into a spreadsheet (e.g., Excel).
+       clipboard information may be further analyzed by pasteing it
+       into a spreadsheet (e.g., Excel).
 
      * Pressing File -> Save Plot will cause the visible plot to be
-       written to a PNG file in the same directory as .sbd output files.
-       The name of the plot will be derived from the run name associated
-       with the scenario.  If no run name has been set, the default run
-       name of 'runrt.png' is used. (Run names are set when the RunRT
-       scenario is saved.)
-
-     * Pressing File -> Copy Plot Data, copies the plot data to the
-       clipboard in a format that may be used directly in an python
-       (or ipython) script.  The clipboard will contain text that
+       written to a PNG file in the same directory as the save files.
+       The name of the plot will be derived from the run name
+       associated with the scenario.  By the way, pressing File ->
+       Save as..., performs the same function as the Save menu option
+       (see below), but also changes the run name.
 
      * There are two ways save the results of a RunRT run.
 
        Pressing 'File -> Write' saves the run in an ascii format that
        is human readable, and may be easier to adapt for use in non-
-       python post-processing solfware.  However, the ascii format is
-       not expedient, since it requires a fair bit of time to re-parse
-       the file each time it's re-loaded. The ascii files are written
-       with a '.sbd' file suffix.
+       python post-processing solfware.  Unfortunately, the ascii format
+       is slow to re-load, since it requires a fair bit of time to
+       re-parse the file each time it's read from disk. The ascii files
+       are written with a '.sbd' file suffix.
 
        Pressing 'File -> save' writes the run data to disk in Python's
-       object serialization format, pickle.  This binary format is much
-       faster to re-load the the '.sbd' files.
+       object serialization format, pickle (.pkl file suffix).  This
+       binary format is much faster to re-load than the '.sbd' files.
 
-       The pickle file (.pkl suffix) provides an easy way to import the
-       SBDART run data into an ipython session.  To simplify the process a
-       short import utility, named RtRestore.py, is provided in the RunRT
+       The pickle save files also provide an easy way to import the SBDART
+       run data into an ipython session.  To simplify the process a short
+       import utility, named RtRestore.py, is provided in the RunRT
        directory.  As an example of how to recover data in an interactive
        session, run and save Example2, above, as example2.pkl.  Then start
        an ipython session in another window, and issue the following
