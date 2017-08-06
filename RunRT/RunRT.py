@@ -261,11 +261,28 @@ class RunRT:
         lineinfo=""
         if isinstance(event.artist, Line2D):
             text = event.artist.get_label()
-            text = text[text.find(' ')+1:]
             if event.mouseevent.button == 1:
-                self.diffbase = text
-                self.PreviewLine("Baseline set to "+text)
+                txt = text.split(None, 1)[1]
+                self.diffbase = txt
+                self.PreviewLine("Baseline set to "+txt)
                 self.Plotit()
+            elif event.mouseevent.button == 2:
+                for curve in self.ax.get_lines():
+                    if curve.get_label() == text:
+                        x=np.array(curve.get_xdata())
+                        y=np.array(curve.get_ydata())
+                        if self.parser.IOUT == 11:
+                            xmin = x.min()
+                            xmax = x.max()
+                            quad = np.trapz(x, -y)
+                            self.PreviewLine('{}:  Xmin={:.5g}  Xmax={:.5g}   Integral={:.5g}'.format(text,xmin,xmax,quad))
+                        else:
+                            ymin = y.min()
+                            ymax = y.max()
+                            quad = np.trapz(y, x)
+                            self.PreviewLine('{}:  Ymin={:.5g}  Ymax={:.5g}   Integral={:.5g}'.format(text,ymin,ymax,quad))
+
+                        break
 
     def GetPlotData(self, choice):
         ylbls0 = []

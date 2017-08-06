@@ -348,12 +348,16 @@ IOUT=1
    plotted lines are hard to distinguish.
 
 8) Click on a plot line with left mouse button to mark it as a baseline
-   for difference plots.  Then by pressing options -> 'Difference plots'
+   for difference plots.  Then by pressing Options -> 'Difference plots'
    or 'Ratio plots' in options menu,the baseline curve will either be
    subtracted or divided out of all other lines in the plot.  Pressing
-   the 'No comparison plots' will restore the default plots.
+   the Options -> 'No comparison plots' will restore the default plots.
 
-9) SBDART can be used to plot the diurnal variation of solar flux at a
+9) Clicking on a plot line with middle mouse button causes the minimum
+   maximum and integral of the curve to be written to preview widget. This
+   action does not affect the baseline selection described above.
+
+10) SBDART can be used to plot the diurnal variation of solar flux at a
    given latitutude and longitude as a function of time.  The first
    step is to compute a sequence of SBDART IOUT=10 calculations
    (irradiance at the top and bottom of the atmosphere) with SZA as the
@@ -384,7 +388,7 @@ NRE=8
 WLINC=20
 IOUT=10
 
-10) The File menu provides several ways to save data displayed in the
+11) The File menu provides several ways to save data displayed in the
     current plot.
 
      * Pressing File -> View Plot Data, will display the current plot
