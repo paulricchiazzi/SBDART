@@ -187,7 +187,7 @@ class RunRT:
         v9=Frame(self.framepreviewcontrol, width=15).pack(side='left')
 
         v8=Frame(self.framepreviewcontrol, borderwidth=3)
-        self.runbtn = Button(v8, text='RUN', width=10,command=self.RunSBDART, borderwidth=2)
+        self.runbtn = Button(v8, text='RUN', width=10, command=self.RunCommands, borderwidth=2)
         self.runbtn.configure(background='pink')
         self.runbtn.pack(pady=5)
         self.addvariant = Button(v8, width=10, text='Add', command=self.AddRtParm)
@@ -264,7 +264,7 @@ class RunRT:
             if event.mouseevent.button == 1:
                 txt = text.split(None, 1)[1]
                 self.diffbase = txt
-                self.PreviewLine("Baseline set to "+txt)
+                self.PreviewLine("Baseline set to "+txt, justify='center')
                 self.Plotit()
             elif event.mouseevent.button == 2:
                 for curve in self.ax.get_lines():
@@ -275,12 +275,12 @@ class RunRT:
                             xmin = x.min()
                             xmax = x.max()
                             quad = np.trapz(x, -y)
-                            self.PreviewLine('{}:  Xmin={:.5g}  Xmax={:.5g}   Integral={:.5g}'.format(text,xmin,xmax,quad))
+                            self.PreviewLine('{}:  Xmin={:.5g}  Xmax={:.5g}   Integral={:.5g}'.format(text,xmin,xmax,quad), justify='center')
                         else:
                             ymin = y.min()
                             ymax = y.max()
                             quad = np.trapz(y, x)
-                            self.PreviewLine('{}:  Ymin={:.5g}  Ymax={:.5g}   Integral={:.5g}'.format(text,ymin,ymax,quad))
+                            self.PreviewLine('{}:  Ymin={:.5g}  Ymax={:.5g}   Integral={:.5g}'.format(text,ymin,ymax,quad), justify='center')
 
                         break
 
@@ -1534,7 +1534,7 @@ class RunRT:
         write stuff to preview line
         :param cmd:
         :param loc:
-        :param kwargs: justify=-1, 0, 1  (left, center, right)
+        :param kwargs: justify ='left' or 'center' or 'right'
         :return:
         """
         self.previewbox.delete(0, 'end')
@@ -1553,7 +1553,7 @@ class RunRT:
             r1, r2 = ranges.split(':')
             r1 = float(r1)
             r2 = float(r2)
-            n = number
+            n = max([1,number])
             if n == 1:
                 lhs = r1
             elif skew == 1.0:
@@ -1869,10 +1869,7 @@ class RunRT:
         variableParms = []
         parms = ''
 
-        if 'clean' in kwargs and kwargs['clean']:
-            clean=True
-        else:
-            clean=False
+        clean = 'clean' in kwargs and kwargs['clean']
 
         for pp in txt.split('\n'):
             p = pp.strip()
@@ -1911,12 +1908,30 @@ class RunRT:
             fh.writelines(txt)
         fh.close()
 
-    def WriteInput(self, inp):
+    def RunSBDART(self, inp):
         lun = open('./INPUT', 'w')
         lun.write("&INPUT\n")
         lun.write(inp)
         lun.write("/\n")
         lun.close()
+        try:
+            proc = subprocess.Popen([self.sbdartexe], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (out, err) = proc.communicate()
+        except:
+            msg = "----- INPUT -----\n"
+            msg += inp
+            msg += "\n----- OUTPUT -----\n"
+            msg += out
+            msg += "\n----- ERROR -----\n"
+            msg += err
+            self.Popup(self.framegraph, msg)
+        if err:
+            msg = "----- Input Error -----\n"
+            msg += inp
+            msg += "\n----- Fortran Error -----\n"
+            msg += err
+            self.Popup(self.framegraph, msg)
+        return out
 
     def ExecuteCmds(self, i, ingest):
         """
@@ -1937,17 +1952,7 @@ class RunRT:
                 nl = nlines/niter
                 out='\n'.join(buf[i*nl:i*nl+nl])
         else:
-            try:
-                self.WriteInput(inp)
-                proc = subprocess.Popen([self.sbdartexe], stdout=subprocess.PIPE)
-                (out, err) = proc.communicate()
-                self.sbdartoutput += out
-
-            except:
-                self.Popup(self.framegraph, err)
-                print "out:", out
-                print "err:", err
-
+            out = self.RunSBDART(inp)
         return out, lbls
 
     def RtLoops(self, **kwargs):
@@ -1961,11 +1966,9 @@ class RunRT:
         self.diffbase = ''
         self.PreviewLine('')
 
-        if kwargs.has_key('ingest') and kwargs['ingest']:
-            ingest = True
-        else:
-            ingest = False
-            self.sbdartoutput = ""
+        ingest = kwargs.has_key('ingest') and kwargs['ingest']
+
+        self.sbdartoutput = ""
         cmds = self.caption.get("1.0", 'end')
         if cmds.count('=') == 0:
             return False
@@ -1981,6 +1984,7 @@ class RunRT:
         timemark = timeit.default_timer() + reporttime
         for i in range(0, niter):
             out, lbls = self.ExecuteCmds(i, ingest)
+            self.sbdartoutput += out
             if self.parser.IOUT == 10:
                 if len(lbls) > 0:
                     label = " ".join(sorted(lbls[1:]))
@@ -2013,9 +2017,7 @@ class RunRT:
         self.SetGroupMenu()
         return True
 
-
-
-    def RunSBDART(self):
+    def RunCommands(self):
         for fn in glob.glob("SBDART_WARNING*"):
             os.remove(fn)
         self.abortit=False
