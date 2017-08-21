@@ -691,7 +691,7 @@ copy of the input file that triggered the warning.
                 This factor varies the strength of Rayleigh scattering
                 for sensitivity studies.
 
-  XO4           sensitivity factor to adjust strength of absorption by
+  XO4:          sensitivity factor to adjust strength of absorption by
                 oxygen collisional complexes (default=1, see comments
                 in subroutine o4cont)
 

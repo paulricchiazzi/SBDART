@@ -277,11 +277,7 @@ IOUT=21
    contains a help file, rtdoc.txt, which documents SBDART input
    parameters.  If rtdoc is visible in a pop-up window, it will move
    to the place in the documentation that covers the RT parameter
-   selected in the RT parm widget. Go ahead, try changing the RT parm
-   selection while the rtdoc popup is visible. (If you've already
-   popped up the rtdoc file and then killed the window, you may have
-   to change the RT parm selection before the rtdoc popup window will
-   appear again).
+   selected in the RT parm widget.
 
 4) With focus in the RT parm widget, you can quickly move to another
    RT parm by entering the first few letters of the parameter and

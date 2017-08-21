@@ -6,6 +6,7 @@ if len(sys.argv) == 1:
     from matplotlib.lines import Line2D
     from Tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label
     import tkFileDialog
+    import Docview
     import Ephemeris
     import Spinner
     import inspect
@@ -33,8 +34,6 @@ class RunRT:
         self.sbdartexe = sbdartexe
 
         self.geninput = GenInput.GenInput()     # instance of GenInput class
-        self.rtdocwindow = None                 # help popup window object
-        self.rtdoctext = None                   # help text object
         self.runname = "runrt"                  # run name
         self.sbdartoutput = ""                  # sbdart output text buffer
         self.variant_to_plot = 0                # variant parameter included on plot
@@ -42,6 +41,8 @@ class RunRT:
         self.optionSpinners = []                # sza to hour option spin boxes
         self.plotwindow=[]                      # xmin,ymin,xmax,ymax
         self.colorbarzoom=[]                    # normalized zmin,zmax,dzmin,dzmax
+        self.rtdoc = Docview.Docview(master,'rtdoc.txt')
+        self.runrtdoc = Docview.Docview(master,'runrtdoc.txt')
         self.plottype = 'xy'
         self.yrange = [float('inf'), float('-inf')]
         self.FixRangeStep = 0
@@ -115,7 +116,7 @@ class RunRT:
 
         self.helpmenu = Menu(self.menubar, tearoff=0)
         self.helpmenu.add_command(label="RunRT", command=self.HelpGUI)
-        self.helpmenu.add_command(label="RTdoc", command=self.HelpRtDoc)
+        self.helpmenu.add_command(label="RTdoc", command=self.rtdoc.Popup)
         self.menubar.add_cascade(label="Help", menu=self.helpmenu)
 
         master.config(menu=self.menubar)
@@ -129,6 +130,15 @@ class RunRT:
         self.framecaption = Frame(master)
         self.framegraph = Frame(master)
 
+        # search
+
+        # Frame(self.framepreviewcontrol, width=15).pack(side='left')
+        # v11=Frame(self.framepreviewcontrol, width=15)
+        # Label(v11, text = 'Search rtdoc', width=15).pack()
+        # self.searchit = Entry(v11)
+        # self.searchit.bind('<Return>', self.searchRtDoc)
+        # self.searchit.pack()
+        # v11.pack(side='left')
 
         # choose variant
 
@@ -137,6 +147,7 @@ class RunRT:
         self.selectvariant = Spinner.Spinner(v2,
                                         values=sorted(self.geninput.rtRange.keys(), reverse=True),
                                         width=10, init='TCLOUD', command=self.SetupPreview)
+        self.selectvariant.bind('<Return>', self.SearchRtDoc)
         self.selectvariant.pack()
         v2.pack(side='left')
 
@@ -218,7 +229,7 @@ class RunRT:
 
         # set up canvas
 
-        self.fig = Figure(figsize=(9, 6), dpi=100) # 9,7
+        self.fig = Figure(figsize=(10, 6), dpi=100) # 9,7
         self.fig.patch.set_facecolor('white')
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.framegraph)
@@ -245,6 +256,7 @@ class RunRT:
         self.selectvariant.insert(0,"TCLOUD")
         self.SetupPreview()
 
+
         # load last file as a default
 
         try:
@@ -255,6 +267,7 @@ class RunRT:
                 self.Popup(self.framegraph, "Path to SBDART executable is not correct\nReplace line 25 of RunRT with correct path", wait=True)
         except:
             pass
+
 
     def SelectLine(self, event):
         '''show label of picked line in preview textbox'''
@@ -290,27 +303,47 @@ class RunRT:
         ydata = []
         xdata = None
         title = self.ax.get_title()
+        w = 11
         for curve in self.ax.get_lines():
-            ylbls0.append(curve.get_label().split()[0])
-            ylbls1.append(curve.get_label().split(' ',1)[1])
+            yl = curve.get_label().split(' ',1)
+            ylbls0.append(yl[0])
+            w=max([w, len(yl[0])+1])
+            if len(yl) == 2:
+                ylbls1.append(yl[1])
+                w=max([w, len(yl[1])+1])
             xdata = curve.get_xdata()
             ydata.append(curve.get_ydata())
+        if len(xdata)==0:
+            self.Popup(self.framegraph, "No plot data")
+            return
         if choice == 'View':
-            w=11                # width of each column
             ws=str(w)
             nc = len(ylbls0)
             tpad = (w*(nc+1)-len(title))/2
             txt = ' '*tpad + title +'\n\n'
-            fm1 = ' ' * w + ('\t{:' + ws + '}') * nc + '\n'
-            fm2 = '\n{:'+ws+'.3e}' + ('\t{:'+ws+'.3e}') * nc
+            fm1 = ' ' * w + ('{:>' + ws + '}') * nc + '\n'
+            fm2 = '\n{:'+ws+'.3e}' + ('{:'+ws+'.3e}') * nc
+            fm3 = '\n{:.3e}' + ('\t{:.3e}') * nc
+
             txt += fm1.format(*ylbls0)
-            txt += fm1.format(*ylbls1)
+            if ylbls1:
+                txt += fm1.format(*ylbls1)
             for i, x in enumerate(xdata):
                 y = []
                 for j in range(0, len(ydata)):
                     y.append(float(ydata[j][i]))
                 txt += fm2.format(x, *y)
-            return txt
+
+            excel = '\t' * (nc/2) + title + '\n\n'
+            excel += '\t'+'\t'.join(ylbls0) + '\n'
+            if ylbls1:
+                excel += '\t'+'\t'.join(ylbls1) + '\n'
+            for i, x in enumerate(xdata):
+                y = []
+                for j in range(0, len(ydata)):
+                    y.append(float(ydata[j][i]))
+                excel += fm3.format(x, *y)
+            return txt,excel
         elif choice == 'Copy':
             txt = 'x=[' + ','.join(['{:11.3e}'.format(float(x)) for x in xdata]) + ']\n'
             yparts = []
@@ -318,7 +351,7 @@ class RunRT:
                 t = '[' + ','.join(['{:11.3e}'.format(float(y)) for y in yy]) + ']'
                 yparts.append(t)
             txt += 'y=[' + ',\n'.join(yparts) + ']'
-            return txt
+            return txt, None
 
     def PlotData(self, choice):
         if choice == 'Save':
@@ -334,13 +367,13 @@ class RunRT:
             self.Popup(self.framegraph, "Could not write " + plotname)
 
         else:
-            txt = self.GetPlotData(choice)
+            txt,excel = self.GetPlotData(choice)
             if choice == 'View':
                 self.Popup(self.framegraph,txt)
             r = Tk()
             r.withdraw()
             r.clipboard_clear()
-            r.clipboard_append(txt)
+            r.clipboard_append(excel)
             r.destroy()
 
     def HilightLine(self, event):
@@ -504,44 +537,47 @@ class RunRT:
         return entry
 
     def HelpGUI(self):
-        if not self.rtdocwindow:
-            fh = open("runrtdoc.txt", "r")
-            lines = fh.readlines()
-            msg = "".join(lines)
-            fh.close()
-            self.Popup(self.framegraph, msg)
+        self.runrtdoc.Popup()
 
     def ViewOutput(self):
         msg=self.sbdartoutput
         if msg:
             self.Popup(self.framegraph, msg)
 
-    def HelpTopic(self):
-        key = self.selectvariant.get()
-        pattern = " " + key + ":"
-        try:
-            txt = self.rtdoctext
-            ind = txt.search(pattern, "1.0", stopindex="end")
-            txt.mark_set("insert", ind)
-            txt.see("insert")
-        except:
-            self.rtdocwindow = None
+    def SearchRtDoc(self, event):
+        '''
+        function triggered by <return> event in select parm widget
+        if widget contains a legitimate rt parm, a help window is popped open to the rt definition
+        if widget contains the first chars of a rt parm, the parm widget is filled with the matching rt parm
+        :param event:
+        :return:
+        '''
+        p = self.selectvariant.get()
+        parm = self.geninput.ParmMatch(p)
+        if parm:
+            if parm == p:
+                self.rtdoc.Popup()
+            else:
+                self.selectvariant.delete(0,'end')
+                self.selectvariant.insert(0,parm)
 
-    def HelpRtDoc(self):
-        if not self.rtdocwindow:
-            fh = open("rtdoc.txt", "r")
-            lines = fh.readlines()
-            msg = "".join(lines)
-            fh.close()
-            self.rtdoctext, self.rtdocwindow = self.Popup(self.framegraph, msg)
+            if self.rtdoc.widget:
+                pattern = " " + parm + ":"
+                self.rtdoc.Search(pattern)
+
+    def HelpTopic(self):
+        p = self.selectvariant.get()
+        parm = self.geninput.ParmMatch(p)
+        if self.rtdoc.widget:
+            pattern = " " + parm + ":"
+            self.rtdoc.Search(pattern)
 
     def ShowFilePopup(self, file):
-        if not self.rtdocwindow:
-            fh = open(file, "r")
-            lines = fh.readlines()
-            msg = "".join(lines)
-            fh.close()
-            self.rtdoctext, self.rtdocwindow = self.Popup(self.framegraph, msg)
+        fh = open(file, "r")
+        lines = fh.readlines()
+        msg = "".join(lines)
+        fh.close()
+        self.Popup(self.framegraph, msg)
 
     def ShowChoice(self, event):
         var = event.widget.get().split('=')[0]
@@ -1124,7 +1160,7 @@ class RunRT:
                         if self.optionComparisonPlot.get() == 1:
                             y -= yb
                         elif self.optionComparisonPlot.get() == 2:
-                            y /= np.where(yb>0, yb, 1e-6*y)
+                            y = np.where(yb>0, y/yb, 1e-6*y)
                             ylabel = 'Ratio'
 
                 if intensity:
@@ -1398,6 +1434,7 @@ class RunRT:
             loc="%dx%d+%d+%d" % (600,400, x+dx, y+dy)
             print "loc=",loc
             dlg.geometry(loc)
+
         if "wait" in kwargs.keys():
             dlg.focus_set()
             dlg.grab_set()
@@ -1406,6 +1443,8 @@ class RunRT:
 
         dlg.lift(aboveThis=frame)
         return txt, dlg
+
+
 
     def GetRootName(self, filename):
         basename = os.path.basename(filename)
@@ -1818,6 +1857,19 @@ class RunRT:
                 constantParms.append("ZAER=15")
         if not 'IOUT' in parms:
             constantParms.append(self.geninput.DocString("IOUT=10"))
+
+        # add other wavelength limit if only one limit specified
+
+        wls = [v.upper() for v in variableParms if v.upper().startswith('WLSUP')]
+        wli = [v.upper() for v in variableParms if v.upper().startswith('WLINF')]
+        if wls and not wli:
+            p = wls[0]
+            p = p.replace('WLSUP','WLINF') + ' &'
+            variableParms.append(p)
+        elif wli and not wls:
+            p = wli[0]
+            p = p.replace('WLINF','WLSUP') + ' &'
+            variableParms.append(p)
 
         self.caption.delete('1.0','end')
         rtcmds = ''

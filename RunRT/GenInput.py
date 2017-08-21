@@ -157,6 +157,13 @@ class GenInput:
                   "IOUT=11"  : "Radiant flux at each atmospheric layer",
                   "IOUT=20"  : "Radiance at top of atmosphere",
                   "IOUT=21"  : "Radiance at bottom of atmosphere",
+                  "IDATM=0"  : "User specified atmospheric profile",
+                  "IDATM=1"  : "Tropical atmospheric profile",
+                  "IDATM=2"  : "Mid-latitude summer atmospheric profile",
+                  "IDATM=3"  : "Mid-latitude winter atmospheric profile",
+                  "IDATM=4"  : "Sub-arctic summer atmospheric profile",
+                  "IDATM=5"  : "Sub-arctice winter atmospheric profile",
+                  "IDATM=6"  : "US-62 atmospheric profile",
                   "IAER=0"   : "No boundary layer aerosol",
                   "IAER=1"   : "Rural aerosol",
                   "IAER=2"   : "Urban aerosol",
@@ -223,6 +230,19 @@ class GenInput:
         else:
             return key
 
+    def ParmMatch(self, pattern):
+        '''
+        get parm that starts with the characters in pattern
+        for example alb return ALBCON
+        :param pattern:
+        :return:
+        '''
+        pat = pattern.upper()
+        for p in self.setRtRange().keys():
+            if p.startswith(pat):
+                return p
+        return ''
+
     def setRtRange(self):
         '''
         rt parameter range dictionary.  key is rt parameter name, value is description and suggested range and skew
@@ -234,6 +254,7 @@ class GenInput:
                 "WLSUP":  "Wavelength upper limit (um)             $ 0.250:100:1",
                 "WLINC":  "Wavelength/wavenumber increment         $ -.01;0;20",
                 "CSZA":   "cosine of solar zenith                  $ 0:1:1",
+                "IDATM":  "Model atmosphere selector               $ 0;1;2;3;4;5;6",
                 "ZPRES":  "Effective surface altitude (km)         $ 0:5:1",
                 "PBAR":   "Surface pressure (mb)                   $ 500:2000:1",
                 "SCLH2O": "Water vapor scale height (km)           $ 0.5:5:1",
@@ -271,5 +292,8 @@ class GenInput:
                 "BTEMP":  "Surface termperature (K)                $ 180:330:1",
                 "NOTHRM": "Thermal calculation selector            $ -1;0;1",
                 "IOUT":   "Output format selector                  $ 1;2;10;11;20;21",
+                "ZGRID1": "Minimum vertical step size (km)         $ 0.1:1:1",
+                "ZGRID2": "Maximum vertical step size (km)         $ 2:50:1",
+                "NGRID":  "Number of cells in re-grided atmosphere $ -1:200:1",
                 "ZOUT":   "Output altitude (km,km)                 $ 0.0:10.0:1"}
 
