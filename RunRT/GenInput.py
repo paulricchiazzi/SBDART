@@ -14,10 +14,7 @@ class GenInput:
         given rtvar=[ {"TCLOUD":[0,10,20]}, {"SZA":[0,30,60]}, {"ALBCON":[0,0.5,1.0]}]
         :return: if iout==10: ["SZA","ALBCON"] ,  else: ["TCLOUD", "SZA", "ALBCON"]
         """
-        seq=[]
-        for hdict in self.rtvar:
-            seq.append(hdict.keys()[0])
-
+        seq = [h.keys()[0] for h in self.rtvar]
         return seq[1:] if self.IOUTformat == 10 else seq
 
     def GetParmMenuItems(self):
@@ -68,7 +65,7 @@ class GenInput:
                 nesting+=1
             if "=" in line:
                 parm, rhs = line.split('=')
-                if parm == "IOUT":
+                if parm.upper() == "IOUT":
                     if rhs.count(';') > 0:
                         rhs=rhs.split(';')[0]                   # only one output format allowed
                     self.IOUTformat = int(rhs)

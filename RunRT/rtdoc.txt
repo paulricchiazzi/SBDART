@@ -628,15 +628,15 @@ copy of the input file that triggered the warning.
                 profile TROPIC.  No (default=-1)
 
  
-  UW:           integrated water vapor amount (G/CM2)
+  UW:           integrated water vapor amount (G/CM2).  Typical range:
+                0.4 to 5 g/cm2. [1 g/cm2 = 1 cm = 10 kg/m2 = 0.394 inches]
 
   UO3:          integrated ozone concentration (ATM-CM) 
                 above the level ZTRP.  The default value of ZTRP=0,
                 so UO3 usally specifies the total ozone column.
                 If UO3 is negative the original ozone density is used. 
-                (default=-1) 
-
-          NOTE: 1 atm-cm = 1000 Dobson Units
+                (default=-1) Typical range: 0.2 and 0.5 atm-cm.
+                [1 atm-cm = 1000 Dobson Units]
 
           NOTE: Use UW or UO3 to set the integrated amounts of water
                 vapor or ozone in the model atmosphere.  Aside from
@@ -646,14 +646,14 @@ copy of the input file that triggered the warning.
                 UW or UO3 is negative.
 
   O3TRP:        integrated ozone concentration (ATM-CM) in troposphere.
- 		i.e., for z.lt.ZTRP.  The original tropospheric density
+ 		        i.e., for z.lt.ZTRP.  The original tropospheric density
                 (set with IDATM) is used when O3TRP is negative. 
                 (default=-1.)
  
   ZTRP:         The altitude of the tropopause.  The parameters UO3 and
- 		O3TRP sets the total column ozone in the stratosphere
- 		and troposphere, respectively.  Note: since the default
- 		value of ZTRP is zero, UO3 normally sets the integrated 
+ 		        O3TRP sets the total column ozone in the stratosphere
+ 		        and troposphere, respectively.  Note: since the default
+ 		        value of ZTRP is zero, UO3 normally sets the integrated
                 ozone amount of the entire atmosphere (default=0).
 
 

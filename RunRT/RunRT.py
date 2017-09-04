@@ -41,8 +41,8 @@ class RunRT:
         self.optionSpinners = []                # sza to hour option spin boxes
         self.plotwindow=[]                      # xmin,ymin,xmax,ymax
         self.colorbarzoom=[]                    # normalized zmin,zmax,dzmin,dzmax
-        self.rtdoc = Docview.Docview(master,'rtdoc.txt')
-        self.runrtdoc = Docview.Docview(master,'runrtdoc.txt')
+        self.rtdoc = Docview.Docview(master,'rtdoc.txt', find=True)
+        self.runrtdoc = Docview.Docview(master,'runrtdoc.txt', find = True)
         self.plottype = 'xy'
         self.yrange = [float('inf'), float('-inf')]
         self.FixRangeStep = 0
@@ -579,7 +579,7 @@ class RunRT:
         fh.close()
         self.Popup(self.framegraph, msg)
 
-    def ShowChoice(self, event):
+    def SwitchMenuItems(self, event):
         var = event.widget.get().split('=')[0]
         cycleseq = self.geninput.CycleSequence()
         self.variant_to_plot = cycleseq.index(var)
@@ -658,7 +658,7 @@ class RunRT:
             if jchk == ichk: continue
             spinbox = Spinbox(self.frameplotcontrols, width=10, values=choices, command=self.Plotit, repeatdelay=500)
             spinbox.pack(side='left')
-            spinbox.bind(rbutn, self.ShowChoice)
+            spinbox.bind(rbutn, self.SwitchMenuItems)
             spinbox.bind('<MouseWheel>', self.SpinBoxIncrement)
             self.groupmenuSpinners.append(spinbox)
 
