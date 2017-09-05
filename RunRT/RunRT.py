@@ -22,7 +22,7 @@ import RtReader
 import subprocess
 import os
 
-sbdartexe = '/Users/paulricchiazzi/Documents/SBDART/sbdart'
+sbdartexe = 'sbdart'
 
 class RunRT:
     """base class for radiative transfer GUI"""
@@ -41,6 +41,8 @@ class RunRT:
         self.optionSpinners = []                # sza to hour option spin boxes
         self.plotwindow=[]                      # xmin,ymin,xmax,ymax
         self.colorbarzoom=[]                    # normalized zmin,zmax,dzmin,dzmax
+        self.reviewfiles=()                     # review files
+        self.reviewfileindex = 0
         self.rtdoc = Docview.Docview(master,'rtdoc.txt', find=True)
         self.runrtdoc = Docview.Docview(master,'runrtdoc.txt', find = True)
         self.plottype = 'xy'
@@ -61,7 +63,7 @@ class RunRT:
         self.menubar = Menu(master)
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Recover", command=lambda: self.LoadFile("RUNS/~RunRT.sbd"))
-        self.filemenu.add_command(label="Open", command=self.LoadFile)
+        self.filemenu.add_command(label="Open", command=self.ReviewFiles)
         self.filemenu.add_command(label="Write", command=self.WriteFile)
         self.filemenu.add_command(label="Save as", command = self.PickleSave)
         self.filemenu.add_command(label="Save", command = lambda sfile = self.runname : self.PickleSave(sfile))
@@ -233,7 +235,6 @@ class RunRT:
         self.fig.patch.set_facecolor('white')
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.framegraph)
-        #self.canvas.mpl_connect('key_press_event', self.KeyPressHandler)
         #self.canvas.mpl_connect('button_press_event', self.ShowPlotData)
         self.canvas.mpl_connect('pick_event', self.SelectLine)
         self.canvas.mpl_connect('scroll_event', self.GraphMouseWheel)
@@ -249,6 +250,9 @@ class RunRT:
         self.framegraph.pack(expand=1)
         self.framecaption.pack(fill='both',expand=1)
         self.canvas._tkcanvas.pack(expand=1)
+
+        master.bind('<Control-n>', self.NextReviewFile)
+        master.bind('<Control-p>', self.PreviousReviewFile)
 
         # selectvariant here to ensure existence of rangeskew
 
@@ -1708,6 +1712,25 @@ class RunRT:
             except:
                 self.caption.insert('1.0', "\n\n     File {} could not be read".format(filename))
         self.runbtn.config(state="normal")
+
+    def ReviewFiles(self):
+        self.ReviewFiles=tkFileDialog.askopenfilenames(title='Choose review files')
+        if len(self.ReviewFiles):
+            self.reviewfileindex = 0
+            self.LoadFile(self.ReviewFiles[self.reviewfileindex])
+
+    def NextReviewFile(self, event):
+        n = len(self.ReviewFiles)
+        if n > 2:
+            self.reviewfileindex = (self.reviewfileindex + n + 1) % n
+            self.LoadFile(self.ReviewFiles[self.reviewfileindex])
+
+    def PreviousReviewFile(self, event):
+        n = len(self.ReviewFiles)
+        if n > 2:
+            self.reviewfileindex = (self.reviewfileindex + n - 1) % n
+            self.LoadFile(self.ReviewFiles[self.reviewfileindex])
+
 
     def load_flat_file(self, filename):
         '''
