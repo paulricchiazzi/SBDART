@@ -496,6 +496,10 @@ c calculate cloud optical depth and scattering parameters
         dtaus=0.
         wreal=0.
         pmom=0.
+        dtauc=0
+        wcld=0
+c       setting wcld to zero causes problems
+
         if(mcldz.gt.0) then
           call taucloud(nz,ncldz,wl,lcld,lwp,tcloud,nre,
      &         dtauc,wcld,imomc,nmom,pmom)
@@ -1734,4 +1738,3 @@ c.......................................................................
       end function wlln
 
       end subroutine wllimits
-
