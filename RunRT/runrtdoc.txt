@@ -385,12 +385,12 @@ IOUT=10
 11) The File menu provides several ways to review and save data displayed
     in the current plot.
 
-     * Pressing File -> Open, will display a file dialog to choose
-       files to view in RunRT.  More than one file may be selected through
-       the dialog.  The first file is diplayed immediately, while the
-       remaining files are added to a list of saved file names.  The next
-       file in the list is opened by pressing Control-n, the previous file
-       is loaded by pressing Control-p.
+     * Pressing File -> Open, will display a file dialog to choose files to
+       view in RunRT.  More than one file may be selected through the dialog.
+       The first file is diplayed immediately.  The other files in the list
+       are opened by pressing the shift-up-arrow or shift-down-arrow.  When
+       RunRT is first opened the saved file list contains all the .pkl files
+       in the RUNS directory.
 
      * Pressing File -> View Plot Data, will display the current plot
        data to a popup window and save the data to the clipboard. The

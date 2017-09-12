@@ -41,7 +41,7 @@ class RunRT:
         self.optionSpinners = []                # sza to hour option spin boxes
         self.plotwindow=[]                      # xmin,ymin,xmax,ymax
         self.colorbarzoom=[]                    # normalized zmin,zmax,dzmin,dzmax
-        self.reviewfiles=()                     # review files
+        self.reviewfilelist=()                  # review files
         self.reviewfileindex = 0
         self.rtdoc = Docview.Docview(master,'rtdoc.txt', find=True)
         self.runrtdoc = Docview.Docview(master,'runrtdoc.txt', find = True)
@@ -251,8 +251,8 @@ class RunRT:
         self.framecaption.pack(fill='both',expand=1)
         self.canvas._tkcanvas.pack(expand=1)
 
-        master.bind('<Control-n>', self.NextReviewFile)
-        master.bind('<Control-p>', self.PreviousReviewFile)
+        master.bind('<Shift-Up>', self.NextReviewFile)
+        master.bind('<Shift-Down>', self.PreviousReviewFile)
 
         # selectvariant here to ensure existence of rangeskew
 
@@ -265,12 +265,20 @@ class RunRT:
 
         try:
             with open("RecentFile", 'r') as myfile:
-                filename = myfile.read()
-            self.LoadFile(filename=filename)
-            if not os.path.isfile(sbdartexe):
-                self.Popup(self.framegraph, "Path to SBDART executable is not correct\nReplace line 25 of RunRT with correct path", wait=True)
+                filename = myfile.read().strip()
+            cwd = os.getcwd()
+            directory = os.path.dirname(filename)
+            self.reviewfilelist = ['{}{}{}'.format(directory, os.path.sep, f) for f in os.listdir(directory) if f.endswith('pkl')]
         except:
             pass
+        try:
+            if filename:
+                self.LoadFile(filename=filename)
+                self.reviewfileindex = self.reviewfilelist.index(filename)
+        except:
+            pass
+        if not os.path.isfile(sbdartexe):
+            self.Popup(self.framegraph, "Path to SBDART executable is not correct\nReplace line 25 of RunRT with correct path", wait=True)
 
 
     def SelectLine(self, event):
@@ -643,6 +651,8 @@ class RunRT:
         # print "ichk:     ",ichk
         # print "tags:     ",tags
 
+        self.ClearEphemerisOptionSpinners()
+
         self.groupmenuChkBox = OrderedDict()
         if len(tags) > 0 and not ichk == -1:
             for choice in tags[ichk]:  #
@@ -667,10 +677,14 @@ class RunRT:
             self.groupmenuSpinners.append(spinbox)
 
     def SetupNominalPlots(self):
+        self.ClearEphemerisOptionSpinners()
+        self.Plotit()
+
+    def ClearEphemerisOptionSpinners(self):
+        '''remove spinbox widgets associated with Ephemeris options'''
         for spinbox in self.optionSpinners:
             spinbox.destroy()
         self.optionSpinners = []
-        self.Plotit()
 
     def ValidForEphemeris(self, constantParms, parms):
         '''
@@ -709,9 +723,7 @@ class RunRT:
 
         if valid:
 
-            for spinbox in self.optionSpinners:
-                spinbox.destroy()
-            self.optionSpinners=[]
+            self.ClearEphemerisOptionSpinners()
 
             spinbox = self.SpinboxEphem('day', range(1,366,5), 171)
             self.optionSpinners.append(spinbox)
@@ -759,9 +771,7 @@ class RunRT:
 
         if valid:
 
-            for spinbox in self.optionSpinners:
-                spinbox.destroy()
-            self.optionSpinners=[]
+            self.ClearEphemerisOptionSpinners()
 
             spinbox = self.SpinboxEphem('day', range(1,366), 171)
             self.optionSpinners.append(spinbox)
@@ -778,9 +788,7 @@ class RunRT:
 
         if valid:
 
-            for spinbox in self.optionSpinners:
-                spinbox.destroy()
-            self.optionSpinners=[]
+            self.ClearEphemerisOptionSpinners()
 
             if parm == 'day':
                 spinbox = self.SpinboxEphem('day', range(1,366,5), 177)
@@ -1468,7 +1476,7 @@ class RunRT:
         if hasattr(self, 'rangeskew'):
             self.rangeskew.delete(0, 'end')
             self.rangeskew.insert(0, 1.0)
-        description,ranges = self.geninput.rtRange[key].split('$')
+        description,ranges = self.geninput.rtRange.get(key, '$1:50:1').split('$')
         self.description.delete(0,'end')
         self.description.insert(0,description.strip())
         self.rangestart.delete(0, 'end')
@@ -1559,18 +1567,19 @@ class RunRT:
             skew = float(self.rangeskew.get())
         start = self.rangestart.get()
         finis = self.rangefinis.get()
-        description,ranges = self.geninput.rtRange[key].split('$')
-        #self.description.delete(0,'end')
-        #self.description.insert(0,description)
-        if ":" in ranges:
-            ranges = "{}:{}".format(start, finis)  # in case user modifies start and finis from entry boxes
-        number = int(self.rangesamples.get())
-        lhs = self.SpreadValues(ranges, number, skew)
-        cmd = "{}={}".format(key, lhs)
-        if kwargs.has_key('covariant') and kwargs['covariant']:
-            cmd += " &"
-        cmd = self.geninput.DocString(cmd)
-        self.PreviewLine(cmd, justify='left')
+        if self.geninput.rtRange.has_key(key):
+            description,ranges = self.geninput.rtRange[key].split('$')
+            #self.description.delete(0,'end')
+            #self.description.insert(0,description)
+            if ":" in ranges:
+                ranges = "{}:{}".format(start, finis)  # in case user modifies start and finis from entry boxes
+            number = int(self.rangesamples.get())
+            lhs = self.SpreadValues(ranges, number, skew)
+            cmd = "{}={}".format(key, lhs)
+            if kwargs.has_key('covariant') and kwargs['covariant']:
+                cmd += " &"
+            cmd = self.geninput.DocString(cmd)
+            self.PreviewLine(cmd, justify='left')
 
     def PreviewLine(self, cmd, **kwargs):
         """
@@ -1694,9 +1703,11 @@ class RunRT:
         Open and read command file, set runname
         :return:
         """
+        filename = os.path.abspath(filename)
         if not filename:
             filename = tkFileDialog.askopenfilename()
 #                        filetypes=[('pkl files', '*.pkl'), ('sbd files', '*.sbd'), ('all files','*.*')])
+        filename=filename.strip()
         if filename:
             self.sbdartoutput = ""
             self.caption.delete('1.0', 'end')
@@ -1714,22 +1725,22 @@ class RunRT:
         self.runbtn.config(state="normal")
 
     def ReviewFiles(self):
-        self.ReviewFiles=tkFileDialog.askopenfilenames(title='Choose review files')
-        if len(self.ReviewFiles):
+        self.reviewfilelist=tkFileDialog.askopenfilenames(title='Choose review files')
+        if len(self.reviewfilelist):
             self.reviewfileindex = 0
-            self.LoadFile(self.ReviewFiles[self.reviewfileindex])
+            self.LoadFile(self.reviewfilelist[self.reviewfileindex])
 
     def NextReviewFile(self, event):
-        n = len(self.ReviewFiles)
+        n = len(self.reviewfilelist)
         if n > 2:
             self.reviewfileindex = (self.reviewfileindex + n + 1) % n
-            self.LoadFile(self.ReviewFiles[self.reviewfileindex])
+            self.LoadFile(self.reviewfilelist[self.reviewfileindex])
 
     def PreviousReviewFile(self, event):
-        n = len(self.ReviewFiles)
+        n = len(self.reviewfilelist)
         if n > 2:
             self.reviewfileindex = (self.reviewfileindex + n - 1) % n
-            self.LoadFile(self.ReviewFiles[self.reviewfileindex])
+            self.LoadFile(self.reviewfilelist[self.reviewfileindex])
 
 
     def load_flat_file(self, filename):
@@ -1754,7 +1765,9 @@ class RunRT:
                 self.Plotit()
         if len(sbdout) < 300000:  # if its a short file, save filename for later recovery
             with open("RecentFile", 'w') as myfile:
-                myfile.write(filename)
+                cwd = os.getcwd()
+                relative_path = os.path.relpath(filename, cwd)
+                myfile.write(relative_path)
 
     def load_pickle_file(self, filename):
         '''
@@ -1792,7 +1805,9 @@ class RunRT:
             self.Plotit()
         if sys.getsizeof(sbdout) < 300000:  # if its a short file, save filename for later recovery
             with open("RecentFile", 'w') as myfile:
-                myfile.write(filename)
+                cwd = os.getcwd()
+                relative_path = os.path.relpath(filename, cwd)
+                myfile.write(relative_path)
 
     def WriteFile(self):
         """

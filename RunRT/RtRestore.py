@@ -20,16 +20,17 @@ class RtRestore:
         load a RunRT pickle file into an ipython session
         :param file   name of pickle file, if not specified a menu of possibilities is offered.
 
-            attributes:
+        attributes:
             data  -- a ordered dictionary of y vectors
                   the last key,value pair in the dictionary is the x vector
 
-                  for IOUT = 10, the dependent variable is to the first variant in the RunRT command file
-                                 e.g., if TCLOUD is the first variant, its variation is in data['TCLOUD']
+                  for IOUT = 10, the dependent variable is to the first variant in the RunRT
+                            command file. e.g., if TCLOUD is the first variant, its variation
+                            is in data['TCLOUD']
                   for IOUT = 1 or 2, the dependent variable is wavelength, given by data['WL']
                   for IOUT = 11 the dependent variable is altitude, given by data['ZZ']
-                  for IOUT = 20 or 21 represent output for radiance plots, and do not have a dependent variable for
-                             for line plots
+                  for IOUT = 20 or 21 represent output for radiance plots, and do not have a
+                            dependent variable forfor line plots
         '''
         if not file:
             files = os.listdir('RUNS')
