@@ -16,7 +16,7 @@ c=======================================================================
       use params, only: kr
       implicit none
       save
-      integer, parameter :: mxwl=1000, mxbc=101
+      integer, parameter :: mxwl=5000, mxbc=101
       real(kr), dimension(mxwl) :: wlalb,alb
       real(kr) :: wndspd,wndang,chlor,salin
       real(kr) :: hssa,hasym,hotspt,hotwdth
@@ -36,39 +36,25 @@ c
       integer :: j
       real(kr) :: wl, wt, salbedo
 c mfl debugging
-      character (len=7)  :: num1
-      character (len=4)  :: num2
+      character (len=9)  :: num1
+      character (len=9)  :: num2
 
       if(nna.eq.0) return ! such as for isalb eq 7
 
-c mfl debugging
-c     print *, 'asdfasdfadfadfad'
+      write(num1, '(f9.3)') wlalb(1)
+      write(num2, '(f9.3)') wlalb(nna)
 
       if(wl.lt.wlalb(1))
-     &  call errmsg(18,'SALBEDO--spectral range lt')
-
-c  mfl
-      if(wl.lt.wlalb(1)) then
-c       print *, 'WARNING: SALBEDO--spectral range lt', wlalb(1), wl
-      endif
-          
-      write(num1, '(f7.1)') wlalb(nna)
-      write(num2, '(i4)') nna
+     & call errmsg(18,'SALBEDO--spectral range error, wlinf lt '//num1)
 
       if(wl.gt.wlalb(nna))
-     &     call errmsg(18,'SALBEDO--spectral range gt '//num1)
-
-c  mfl
-      if(wl.gt.wlalb(nna)) then
-c       print *, 'WARNING: SALBEDO--spectral range gt', wlalb(nna)
-      endif
+     & call errmsg(18,'SALBEDO--spectral range error, wlsup gt '//num2)
       
       call locate(wlalb,nna,wl,j)
       wt=(wl-wlalb(j))/(wlalb(j+1)-wlalb(j))
       wt=max(zero,min(one,wt))
       salbedo=alb(j)*(1.-wt)+alb(j+1)*wt
-c mfl
-c     print *, salbedo
+
       return
       end
 c-----------------------------------------------------------------------
@@ -134,10 +120,11 @@ c        return
 c      endif
 
 c mfl
-c     print *, 'isalb = ', isalb
+c      print *, 'isalb = ', isalb
 
       select case (isalb)
       case (-1) ; call rdspec('albedo.dat',wlalb,alb,nna)
+
       case (0)  
         alb(1:2)=albcon
         wlalb(1:2)=(/0._kr,huge(0._kr)/)
@@ -4419,7 +4406,10 @@ c     print *, 'in redspec()'
       nnsv=nn
       open(unit=13,file=file,status='old',form='formatted')
 
-      read(13,*,end=10) (wl(i),r(i),i=1,huge(0))
+      do i=1, nn
+         read(13,*,end=10) wl(i),r(i)
+      end do
+
  10   continue
 
       close(unit=13)
