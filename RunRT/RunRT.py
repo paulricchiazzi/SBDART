@@ -1,10 +1,14 @@
 import sys, os
 if len(sys.argv) == 1:
     import matplotlib
+    matplotlib.use('Tkagg')
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
-    from Tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label
+    try:
+        from Tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label, PanedWindow
+    except:
+        from tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label, PanedWindow
     import tkFileDialog
     import Docview
     import Ephemeris
@@ -125,22 +129,15 @@ class RunRT:
 
         # set control, graph and caption frames
 
-        #self.framepreviewlabels = Frame(master)
         self.framepreviewcontrol = Frame(master)
         self.framepreviewcmd = Frame(master)
         self.frameplotcontrols = Frame(master)
-        self.framecaption = Frame(master)
         self.framegraph = Frame(master)
+        self.framecaption = Frame(master)
 
-        # search
-
-        # Frame(self.framepreviewcontrol, width=15).pack(side='left')
-        # v11=Frame(self.framepreviewcontrol, width=15)
-        # Label(v11, text = 'Search rtdoc', width=15).pack()
-        # self.searchit = Entry(v11)
-        # self.searchit.bind('<Return>', self.searchRtDoc)
-        # self.searchit.pack()
-        # v11.pack(side='left')
+        self.framegraphcaption = PanedWindow(master, orient='vertical', showhandle=True)
+        self.framegraphcaption.add(self.framegraph)
+        self.framegraphcaption.add(self.framecaption)
 
         # choose variant
 
@@ -227,11 +224,12 @@ class RunRT:
 
         self.yautoscale = BooleanVar()
         self.yaxisautoscale = Checkbutton(self.frameplotcontrols, text="Y-Autoscale", variable=self.yautoscale,command=self.Plotit)
-        self.yaxisautoscale.pack(side='left')
+        self.yaxisautoscale.pack(side='left', padx=(2,10))
 
         # set up canvas
 
-        self.fig = Figure(figsize=(10, 6), dpi=100) # 9,7
+        self.fig = Figure(figsize=(8, 5), dpi=100) # 10,6
+
         self.fig.patch.set_facecolor('white')
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.framegraph)
@@ -247,12 +245,13 @@ class RunRT:
         self.framepreviewcontrol.pack(ipady=5)
         self.framepreviewcmd.pack(fill='x')
         self.frameplotcontrols.pack()
-        self.framegraph.pack(expand=1)
-        self.framecaption.pack(fill='both',expand=1)
+        self.framegraph.pack(pady=(5,10))
+        self.framecaption.pack(fill='both',pady=(10,2))
+        self.framegraphcaption.pack(fill='both')
         self.canvas._tkcanvas.pack(expand=1)
 
-        master.bind('<Shift-Up>', self.NextReviewFile)
-        master.bind('<Shift-Down>', self.PreviousReviewFile)
+        master.bind('<Prior>', self.NextReviewFile)
+        master.bind('<Next>', self.PreviousReviewFile)
 
         # selectvariant here to ensure existence of rangeskew
 
@@ -783,7 +782,7 @@ class RunRT:
             self.Plotit()
 
     def SetupDailySpinner(self, parm):
-        variableParms, constantParms, parms = self.GetParmsInCmd(clean=True)
+        variableParms, constantParms, parms, _ = self.GetParmsInCmd(clean=True)
         valid = self.ValidForEphemeris(constantParms, parms)
 
         if valid:
@@ -1668,20 +1667,27 @@ class RunRT:
         lines = cmds.split('\n')
         for line in lines:
             if line.startswith('#'): continue
-            if parm + "=" in line: return False
+            if parm + "=" in line.upper() : return False
         return True
 
     def ReplaceParm(self, cmds, newcmd):
-        rmcmd=newcmd.endswith('=') # no values indicate parameter should be removed
+
         parm=newcmd.split('=')[0]
         lines = cmds.split('\n')
         newcmds=""
+
+        if newcmd.endswith('='):
+            addcmd = ''
+        else:
+            addcmd = newcmd + "\n" \
+
         for line in lines:
             if line == '':
                 continue
             elif line.startswith(parm + "="):
-                if not rmcmd:
-                    newcmds+=newcmd + "\n"
+                newcmds+=addcmd
+            elif line.startswith(parm.lower() + "="):
+                newcmds+=addcmd.lower()
             else:
                 newcmds+=line+"\n"
         return newcmds
@@ -1882,7 +1888,7 @@ class RunRT:
         add certain required constants parameters
         :return:
         """
-        variableParms, constantParms, parms = self.GetParmsInCmd() # For clarity, add default switch values
+        variableParms, constantParms, parms, dictionaryfault = self.GetParmsInCmd() # For clarity, add default switch values
 
         # add commands required by context
 
@@ -1927,8 +1933,12 @@ class RunRT:
                           'ISAT=-1':  'filter.dat',
                           'NF=-1':    'solar.dat',
                           'NF=-2':    'cktau.dat'}
+
         msg=''
 
+
+        for df in dictionaryfault:
+            msg+= "{} has non-unique values and will cause a dictionary fault (see runrtdoc)\n".format(df)
 
         for rf,fn in requiredfiles.iteritems():
             if (rf in constantParms) and not os.path.isfile(fn):
@@ -1940,7 +1950,7 @@ class RunRT:
                 msg+= "{} requires input file {}\n".format(nre, requiredfiles(nre))
 
         if msg:
-            self.Popup(self.framegraph, "Files not found:\n\n"+msg, wait=True)
+            self.Popup(self.framegraph, "Input Error:\n\n"+msg, wait=True)
             return False
         else:
             return True
@@ -1953,10 +1963,12 @@ class RunRT:
         variableParms   - list of commands that specify variable parameters
         constantParms   - list of commands that specify constant parameters
         parms           - string that contains ordered list of rt parameters
+        dictionaryfault - list of variable parms that will produce a dictionary fault
         '''
         txt = str(self.caption.get('1.0', 'end'))
         constantParms = []
         variableParms = []
+        dictionaryfault = []
         parms = ''
 
         clean = 'clean' in kwargs and kwargs['clean']
@@ -1972,14 +1984,22 @@ class RunRT:
             elif '=' in p:
                 if not clean:
                     p = p.split('#')[0]
-                pp = p.split('=')[0]
+                    (pp,vv) = p.split('=')
                 parms += pp.upper() + ';'
                 if ';' in p:
                     variableParms.append(p)
+
+                    # check varaible parms that will produce a dictionary fault due to duplicated values
+                    if not vv.endswith('&'):
+                        parmvalues = vv.strip().split(';')
+                        if not len(parmvalues) == len(set(parmvalues)):
+                            dictionaryfault.append(p)
+
+
                 else:
                     constantParms.append(p)
 
-        return variableParms, constantParms, parms
+        return variableParms, constantParms, parms, dictionaryfault
 
     def SaveLastTry(self):
         """
@@ -2136,7 +2156,6 @@ class RunRT:
 
 
 if len(sys.argv) == 1:
-    matplotlib.use('Tkagg')
     root = Tk()
     my_gui = RunRT(root)
     root.mainloop()
