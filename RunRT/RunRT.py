@@ -716,7 +716,7 @@ class RunRT:
         :return:
         '''
 
-        variableParms, constantParms, parms = self.GetParmsInCmd(clean=True)
+        variableParms, constantParms, parms, _ = self.GetParmsInCmd(clean=True)
 
         valid = self.ValidForEphemeris(constantParms, parms)
 
@@ -764,7 +764,7 @@ class RunRT:
         :return:
         '''
 
-        variableParms, constantParms, parms = self.GetParmsInCmd(clean=True)
+        variableParms, constantParms, parms, _ = self.GetParmsInCmd(clean=True)
 
         valid = self.ValidForEphemeris(constantParms, parms)
 
@@ -1984,7 +1984,7 @@ class RunRT:
             elif '=' in p:
                 if not clean:
                     p = p.split('#')[0]
-                    (pp,vv) = p.split('=')
+                (pp,vv) = p.split('=')
                 parms += pp.upper() + ';'
                 if ';' in p:
                     variableParms.append(p)
