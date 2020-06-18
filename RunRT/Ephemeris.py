@@ -127,9 +127,9 @@ class SolarEphemeris:
                 daylight = 0
             return noon, daylight
         else:
-            tanfac = 1/tanfac
+            tanfac = 1.0/tanfac
 
-        if tanfac > 1:
+        if tanfac > 1.0:
             daylight = 24
         elif tanfac < -1:
             daylight = 0
@@ -137,7 +137,7 @@ class SolarEphemeris:
             pdiff = 2*abs(np.arccos(tanfac))
             if (pdiff < np.pi) == (cosfac > 0):   # daylight hours greater than 12 in summer hemisphere
                 pdiff = 2*np.pi - pdiff
-            daylight = (pdiff*180/np.pi)*24/360
+            daylight = (pdiff*180.0/np.pi)*24/360
         return noon, daylight
 
     def sunpos(self, iday, time):

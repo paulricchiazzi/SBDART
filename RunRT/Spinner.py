@@ -1,4 +1,7 @@
-from Tkinter import Entry
+try:
+    from tkinter import Entry
+except:
+    from Tkinter import Entry
 
 class Spinner(Entry):
     """
@@ -28,20 +31,20 @@ class Spinner(Entry):
         Entry.__init__(self, master, **edict)
 
 
-        if kwargs.has_key('Return'):
+        if 'Return' in kwargs:
             self.bind('<Return>', kwargs['Return'])
         else:
             self.bind('<Return>', self.Search)
 
         self.wrap=False
 
-        if kwargs.has_key('values'):
+        if 'values' in kwargs:
             self.values = kwargs['values']
-        if kwargs.has_key('init'):
+        if 'init' in kwargs:
             init=kwargs['init']
-        if kwargs.has_key('command'):
+        if 'command' in kwargs:
             self.CommandCallBack=kwargs['command']
-        if kwargs.has_key('wrap'):
+        if 'wrap' in kwargs:
             self.wrap=True
 
         if self.values:

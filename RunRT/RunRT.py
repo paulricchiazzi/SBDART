@@ -1,3 +1,11 @@
+# updated to python3
+#  changes:     REPLACE import Tkinter          WITH import tkinter
+#               REPLACE import tkFileDialog     WITH filedialog imported from tkinter
+#               REPLACE dict.has_key(key)       WITH key in dict
+#               REPLACE FigureCanvasTkAgg.show  WITH FigureCanvasTkAgg.draw
+
+
+
 import sys, os
 if len(sys.argv) == 1:
     import matplotlib
@@ -5,11 +13,8 @@ if len(sys.argv) == 1:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     from matplotlib.lines import Line2D
-    try:
-        from Tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label, PanedWindow
-    except:
-        from tkinter import Tk, Button, Frame, Spinbox, Menu, IntVar, BooleanVar, StringVar, Toplevel, Text, Entry, Checkbutton, Label, PanedWindow
-    import tkFileDialog
+    from tkinter import Tk, Button, Frame, Spinbox, Menu,  Toplevel, Text, Entry, Checkbutton, Label, PanedWindow
+    from tkinter import IntVar, BooleanVar, StringVar, filedialog
     import Docview
     import Ephemeris
     import Spinner
@@ -34,7 +39,8 @@ class RunRT:
     def __init__(self, master):
 
         # properties
-
+        version=sys.version
+        print('{}'.format(version))
         self.sbdartexe = sbdartexe
 
         self.geninput = GenInput.GenInput()     # instance of GenInput class
@@ -64,68 +70,7 @@ class RunRT:
         self.master = master
         master.title(self.runname)
 
-        self.menubar = Menu(master)
-        self.filemenu = Menu(self.menubar, tearoff=0)
-        self.filemenu.add_command(label="Recover", command=lambda: self.LoadFile("RUNS/~RunRT.sbd"))
-        self.filemenu.add_command(label="Open", command=self.ReviewFiles)
-        self.filemenu.add_command(label="Write", command=self.WriteFile)
-        self.filemenu.add_command(label="Save as", command = self.PickleSave)
-        self.filemenu.add_command(label="Save", command = lambda sfile = self.runname : self.PickleSave(sfile))
-        self.filemenu.add_separator()
-        #self.filemenu.add_command(label="View Output", command=self.ViewOutput)
-        self.filemenu.add_command(label="Save plot as PNG", command = lambda choice = 'Save': self.PlotData(choice))
-        self.filemenu.add_command(label="View Plot Data", command = lambda choice = 'View': self.PlotData(choice))
-        #self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
-        self.menubar.add_cascade(label="File",menu=self.filemenu)
-
-        self.optionmenu = Menu(self.menubar, tearoff=0)
-        self.optionDiurnalPlot = IntVar(0)
-        self.optionmenu.add_radiobutton(label="Nominal", variable=self.optionDiurnalPlot, value=0, command=self.SetupNominalPlots)
-        self.optionmenu.add_radiobutton(label='Hourly flux', variable=self.optionDiurnalPlot, value=1, command=self.SetupHourly)
-        self.optionmenu.add_radiobutton(label='Hourly flux (fine)', variable=self.optionDiurnalPlot, value=2, command=self.SetupHourlyPlace)
-        self.optionmenu.add_radiobutton(label='Diurnal average vs lat', variable=self.optionDiurnalPlot, value=3, command=lambda parm='day' : self.SetupDailySpinner(parm))
-        self.optionmenu.add_radiobutton(label='Diurnal average vs day', variable=self.optionDiurnalPlot, value=4, command=lambda parm='lat' : self.SetupDailySpinner(parm))
-        self.optionmenu.add_separator()
-        self.optionComparisonPlot = IntVar(0)
-        self.optionmenu.add_radiobutton(label='No Comparison', variable = self.optionComparisonPlot, value=0, command = self.Plotit)
-        self.optionmenu.add_radiobutton(label='Difference Plot', variable = self.optionComparisonPlot, value=1, command = self.Plotit)
-        self.optionmenu.add_radiobutton(label='Ratio Plot', variable = self.optionComparisonPlot, value=2,command = self.Plotit)
-        self.menubar.add_cascade(label="Options", menu=self.optionmenu)
-
-        # select plot groups
-
-        self.menugroups = os.listdir("RUNS")
-        self.menugroup = IntVar(value=-1)
-        if len(self.menugroups) > 0:
-            self.groupmenu = Menu(self.menubar, tearoff=0)
-            if len(self.menugroups) == 0:
-                self.groupmenu.add_radiobutton(label="None", variable=self.menugroup, value=-1)
-            for k in range(0, len(self.menugroups)):
-                self.groupmenu.add_radiobutton(label=self.menugroups[k], variable=self.menugroup, value=k,
-                                               command=self.SetCaption)
-                # self.menubar.add_cascade(label="Runs", menu=self.groupmenu)
-
-
-            # setup menu for loop selection
-
-        self.groupmenu = Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="Plot Lines", menu=self.groupmenu)
-
-        # setup menu for flux parameters
-
-        self.fmenu=Menu(self.menubar, tearoff=0)
-        self.parser = RtReader.RtReader("IOUT=10", BooleanVar)
-        self.SetRtMenu()
-        self.menubar.add_cascade(label="RT Quants", menu=self.fmenu)
-
-        # help menu
-
-        self.helpmenu = Menu(self.menubar, tearoff=0)
-        self.helpmenu.add_command(label="RunRT", command=self.HelpGUI)
-        self.helpmenu.add_command(label="RTdoc", command=self.rtdoc.Popup)
-        self.menubar.add_cascade(label="Help", menu=self.helpmenu)
-
-        master.config(menu=self.menubar)
+        self.MenuBarSetup(master)
 
         # set control, graph and caption frames
 
@@ -196,14 +141,21 @@ class RunRT:
 
         v9=Frame(self.framepreviewcontrol, width=15).pack(side='left')
 
-        v8=Frame(self.framepreviewcontrol, borderwidth=3)
+        master.bind('<Prior>', self.NextReviewFile)
+        master.bind('<Next>', self.PreviousReviewFile)
+
+        v8=Frame(self.framepreviewcontrol, borderwidth=1)
         self.runbtn = Button(v8, text='RUN', width=10, command=self.RunCommands, borderwidth=2)
         self.runbtn.configure(background='pink')
-        self.runbtn.pack(pady=5)
+        self.runbtn.grid(column=0, row=0, columnspan=2, sticky='ew')
         self.addvariant = Button(v8, width=10, text='Add', command=self.AddRtParm)
         self.addvariant.configure(background='pink')
         self.addvariant.bind(self.rightmouse, self.NewRtParm)
-        self.addvariant.pack(pady=5)
+        self.addvariant.grid(column=0, row=1, columnspan=2, sticky='ew')
+        btb=Button(v8, text='Back', width=3, command=self.PreviousReviewFile)
+        btn=Button(v8, text='Next', width=3, command=self.NextReviewFile)
+        btb.grid(column=0, row=2, sticky='ew')
+        btn.grid(column=1, row=2, sticky='ew')
         v8.pack(side='left')
 
         self.abortbtn = Button(v8, width=10, text='Abort', command=self.AbortRun)
@@ -250,9 +202,6 @@ class RunRT:
         self.framegraphcaption.pack(fill='both')
         self.canvas._tkcanvas.pack(expand=1)
 
-        master.bind('<Prior>', self.NextReviewFile)
-        master.bind('<Next>', self.PreviousReviewFile)
-
         # selectvariant here to ensure existence of rangeskew
 
         self.selectvariant.delete(0,"end")
@@ -267,7 +216,7 @@ class RunRT:
                 filename = myfile.read().strip()
             cwd = os.getcwd()
             directory = os.path.dirname(filename)
-            self.reviewfilelist = ['{}{}{}'.format(directory, os.path.sep, f) for f in os.listdir(directory) if f.endswith('pkl')]
+            self.reviewfilelist = ['{}{}{}'.format(directory, os.path.sep,f) for f in sorted(os.listdir(directory)) if f.endswith('pkl')]
         except:
             pass
         try:
@@ -276,9 +225,72 @@ class RunRT:
                 self.reviewfileindex = self.reviewfilelist.index(filename)
         except:
             pass
-        if not os.path.isfile(sbdartexe):
-            self.Popup(self.framegraph, "Path to SBDART executable is not correct\nReplace line 25 of RunRT with correct path", wait=True)
 
+        if not os.path.isfile(sbdartexe):
+            self.Popup(self.framegraph, "The SBDART executable 'sbdart' was not found in current working folder\n"
+                                        "Create a link to the executable to enable new RT computations", wait=False)
+
+    def MenuBarSetup(self, master):
+        self.menubar = Menu(master)
+        self.filemenu = Menu(self.menubar, tearoff=0)
+        self.filemenu.add_command(label="Recover", command=lambda: self.LoadFile("RUNS/~RunRT.sbd"))
+        self.filemenu.add_command(label="Open", command=self.ReviewFiles)
+        self.filemenu.add_command(label="Write", command=self.WriteFile)
+        self.filemenu.add_command(label="Save as", command=self.PickleSave)
+        self.filemenu.add_command(label="Save", command=lambda sfile=self.runname: self.PickleSave(sfile))
+        self.filemenu.add_separator()
+        # self.filemenu.add_command(label="View Output", command=self.ViewOutput)
+        self.filemenu.add_command(label="Save plot as PNG", command=lambda choice='Save': self.PlotData(choice))
+        self.filemenu.add_command(label="View Plot Data", command=lambda choice='View': self.PlotData(choice))
+        # self.filemenu.add_command(label="Copy Plot Data", command = lambda choice = 'Copy': self.PlotData(choice))
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        self.optionmenu = Menu(self.menubar, tearoff=0)
+        self.optionDiurnalPlot = IntVar(0)
+        self.optionmenu.add_radiobutton(label="Nominal", variable=self.optionDiurnalPlot, value=0,
+                                        command=self.SetupNominalPlots)
+        self.optionmenu.add_radiobutton(label='Hourly flux', variable=self.optionDiurnalPlot, value=1,
+                                        command=self.SetupHourly)
+        self.optionmenu.add_radiobutton(label='Hourly flux (fine)', variable=self.optionDiurnalPlot, value=2,
+                                        command=self.SetupHourlyPlace)
+        self.optionmenu.add_radiobutton(label='Diurnal average vs lat', variable=self.optionDiurnalPlot, value=3,
+                                        command=lambda parm='day': self.SetupDailySpinner(parm))
+        self.optionmenu.add_radiobutton(label='Diurnal average vs day', variable=self.optionDiurnalPlot, value=4,
+                                        command=lambda parm='lat': self.SetupDailySpinner(parm))
+        self.optionmenu.add_separator()
+        self.optionComparisonPlot = IntVar(0)
+        self.optionmenu.add_radiobutton(label='No Comparison', variable=self.optionComparisonPlot, value=0,
+                                        command=self.Plotit)
+        self.optionmenu.add_radiobutton(label='Difference Plot', variable=self.optionComparisonPlot, value=1,
+                                        command=self.Plotit)
+        self.optionmenu.add_radiobutton(label='Ratio Plot', variable=self.optionComparisonPlot, value=2,
+                                        command=self.Plotit)
+        self.menubar.add_cascade(label="Options", menu=self.optionmenu)
+        # select plot groups
+        self.menugroups = os.listdir("RUNS")
+        self.menugroup = IntVar(value=-1)
+        if len(self.menugroups) > 0:
+            self.groupmenu = Menu(self.menubar, tearoff=0)
+            if len(self.menugroups) == 0:
+                self.groupmenu.add_radiobutton(label="None", variable=self.menugroup, value=-1)
+            for k in range(0, len(self.menugroups)):
+                self.groupmenu.add_radiobutton(label=self.menugroups[k], variable=self.menugroup, value=k,
+                                               command=self.SetCaption)
+                # self.menubar.add_cascade(label="Runs", menu=self.groupmenu)
+
+            # setup menu for loop selection
+        self.groupmenu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Plot Lines", menu=self.groupmenu)
+        # setup menu for flux parameters
+        self.fmenu = Menu(self.menubar, tearoff=0)
+        self.parser = RtReader.RtReader("IOUT=10", BooleanVar)
+        self.SetRtMenu()
+        self.menubar.add_cascade(label="RT Quants", menu=self.fmenu)
+        # help menu
+        self.helpmenu = Menu(self.menubar, tearoff=0)
+        self.helpmenu.add_command(label="RunRT", command=self.HelpGUI)
+        self.helpmenu.add_command(label="RTdoc", command=self.rtdoc.Popup)
+        self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+        master.config(menu=self.menubar)
 
     def SelectLine(self, event):
         '''show label of picked line in preview textbox'''
@@ -330,7 +342,7 @@ class RunRT:
         if choice == 'View':
             ws=str(w)
             nc = len(ylbls0)
-            tpad = (w*(nc+1)-len(title))/2
+            tpad = (w*(nc+1)-len(title))//2    # python2->python3 issue
             txt = ' '*tpad + title +'\n\n'
             fm1 = ' ' * w + ('{:>' + ws + '}') * nc + '\n'
             fm2 = '\n{:'+ws+'.3e}' + ('{:'+ws+'.3e}') * nc
@@ -345,7 +357,7 @@ class RunRT:
                     y.append(float(ydata[j][i]))
                 txt += fm2.format(x, *y)
 
-            excel = '\t' * (nc/2) + title + '\n\n'
+            excel = '\t' * (nc//2) + title + '\n\n'      # python2->python3 issue
             excel += '\t'+'\t'.join(ylbls0) + '\n'
             if ylbls1:
                 excel += '\t'+'\t'.join(ylbls1) + '\n'
@@ -460,6 +472,8 @@ class RunRT:
         xsz,ysz=self.canvas.get_width_height()
         xpn=float(x)/xsz
         ypn=float(y)/ysz
+        #print('x, xsz, xpn, xbmn, xpn-xbmn=({}, {}, {}, {}, {})'.format(x, xsz, xpn, xbmn, xpn-xbmn))
+        #print('y, ysz, ypn, ybmn, ypn-ybmn=({}, {}, {}, {}, {})'.format(y, ysz, ypn, ybmn, ypn-ybmn))
 
         if (xpn-xbmn)*(ypn-ybmn) > 0:
             self.plotwindow=[]
@@ -486,6 +500,8 @@ class RunRT:
                 ymn += ds*ytic
             else:
                 ymx += ds*ytic
+        #print('xmn,ymn,xmx,ymx=({}, {}, {}, {})'.format(xmn,ymn,xmx,ymx))
+
         self.plotwindow=[xmn,ymn,xmx,ymx]
         self.Plotit()
 
@@ -504,7 +520,7 @@ class RunRT:
             vmn,vmx=(0,0)
             if self.colorbarzoom:
                 vmn,vmx= self.colorbarzoom
-                print 'vmn vmx {}  {}'.format(vmn,vmx)
+                print('vmn vmx {}  {}'.format(vmn,vmx))
                 ztic = 0.1*(vmx-vmn)
                 if ztic > 0:
                     ynorm = (float(y)/ysz-ybmn)/(ybmx-ybmn)
@@ -531,12 +547,12 @@ class RunRT:
         :return:
         """
 
-        if kwargs.has_key('width'):
+        if 'width' in kwargs:
             entry=Entry(frame, width=kwargs['width'])
         else:
             entry=Entry(frame)
 
-        for k in kwargs.keys():
+        for k in kwargs:
             #print "MakeEntry {} : {}".format(k, kwargs[k])
             if k == 'init':
                 entry.insert(0,kwargs[k])
@@ -599,10 +615,10 @@ class RunRT:
         try:
             self.Plotit()
         except:
-            print "Error in ShowChoice"
-            print "var:             ", var
-            print "variant_to_plot: ", self.variant_to_plot
-            print "cycleseq:        ", cycleseq
+            print("Error in ShowChoice")
+            print( "var:             ", var)
+            print("variant_to_plot: ", self.variant_to_plot)
+            print("cycleseq:        ", cycleseq)
 
     def SetRtMenu(self):
         """
@@ -796,7 +812,6 @@ class RunRT:
             self.optionSpinners.append(spinbox)
             self.Plotit()
 
-
     def GetOptionSpinnerValues(self):
         values = []
         for spinbox in self.optionSpinners:
@@ -906,7 +921,7 @@ class RunRT:
         nx,ny=array.shape
         for iy in range(0,ny):
             line="".join(["{:10.3f}".format(x) for x in array[:,iy]])
-            print line
+            print(line)
 
     def PlotGroup(self, key):
         """
@@ -998,9 +1013,9 @@ class RunRT:
                 wlkey = "WL"
             ylabel = self.parser.rtunits[rtkey]
             xlabel = "$Wavelength (\mu m)$"
-            iswavenumber = self.parser.menucheck.has_key(' Wavenumber') and self.parser.menucheck[' Wavenumber'].get()
-            isefftemp = self.parser.menucheck.has_key(' EffectiveTemp') and self.parser.menucheck[' EffectiveTemp'].get()
-            istransmit = self.parser.menucheck.has_key(' Transmitted') and self.parser.menucheck[' Transmitted'].get()
+            iswavenumber = ' Wavenumber' in self.parser.menucheck and self.parser.menucheck[' Wavenumber'].get()
+            isefftemp = ' EffectiveTemp' in self.parser.menucheck and self.parser.menucheck[' EffectiveTemp'].get()
+            istransmit = ' Transmitted' in self.parser.menucheck and self.parser.menucheck[' Transmitted'].get()
             x = self.yvariable[wlkey][:]
             self.xvariable = x
             if self.goodkey(pkey):
@@ -1060,7 +1075,7 @@ class RunRT:
         self.ax.set_title(plottitle)
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
-        self.canvas.show()
+        self.canvas.draw()
 
     def PlanckTemp(self, w, r):
         '''
@@ -1081,7 +1096,6 @@ class RunRT:
         lhs = 1+2*np.pi*h*c**2/(Bi*wmks**5)
         efftemp = h*c/(wmks*k*np.log(lhs))
         return efftemp
-
 
     def Plotit10(self):
         self.ClearPlot()
@@ -1201,7 +1215,7 @@ class RunRT:
         self.ax.set_title(plottitle)
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
-        self.canvas.show()
+        self.canvas.draw()
 
     def DiurnalAverageSetup(self, days, lats, x):
         wszaarr = []
@@ -1317,7 +1331,7 @@ class RunRT:
         self.ax.set_title(plottitle)
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
-        self.canvas.show()
+        self.canvas.draw()
 
     def Plotit20(self):
         azimuths=np.radians(self.parser.phi)
@@ -1362,11 +1376,9 @@ class RunRT:
                 cp=self.ax.contourf(phi, theta, values,20)
                 self.fig.colorbar(cp, ax=self.ax, orientation='vertical',pad=0.1,label=label)
                 #self.fig.tight_layout(rect=[0.01,0.01,0.9,0.99])
-                self.canvas.show()
+                self.canvas.draw()
             else:
                 return
-
-
 
     def SetupEphemHours(self, x, day, lat, lon):
         '''
@@ -1436,17 +1448,17 @@ class RunRT:
         txt = Text(dlg, width=width, height=height)
         txt.insert("1.0", msg)
         txt.pack()
-        if kwargs.has_key("location"):
+        if "location" in kwargs:
             dx,dy=kwargs['location']
             w=txt.winfo_width()
             h=txt.winfo_height()
             x=frame.winfo_x()
             y=frame.winfo_y()
             loc="%dx%d+%d+%d" % (600,400, x+dx, y+dy)
-            print "loc=",loc
+            print("loc=",loc)
             dlg.geometry(loc)
 
-        if "wait" in kwargs.keys():
+        if kwargs.get("wait", False):
             dlg.focus_set()
             dlg.grab_set()
             dlg.transient(master=frame)
@@ -1454,8 +1466,6 @@ class RunRT:
 
         dlg.lift(aboveThis=frame)
         return txt, dlg
-
-
 
     def GetRootName(self, filename):
         basename = os.path.basename(filename)
@@ -1566,7 +1576,7 @@ class RunRT:
             skew = float(self.rangeskew.get())
         start = self.rangestart.get()
         finis = self.rangefinis.get()
-        if self.geninput.rtRange.has_key(key):
+        if key in self.geninput.rtRange:
             description,ranges = self.geninput.rtRange[key].split('$')
             #self.description.delete(0,'end')
             #self.description.insert(0,description)
@@ -1575,7 +1585,7 @@ class RunRT:
             number = int(self.rangesamples.get())
             lhs = self.SpreadValues(ranges, number, skew)
             cmd = "{}={}".format(key, lhs)
-            if kwargs.has_key('covariant') and kwargs['covariant']:
+            if 'covariant' in kwargs and kwargs['covariant']:
                 cmd += " &"
             cmd = self.geninput.DocString(cmd)
             self.PreviewLine(cmd, justify='left')
@@ -1711,7 +1721,7 @@ class RunRT:
         """
         filename = os.path.abspath(filename)
         if not filename:
-            filename = tkFileDialog.askopenfilename()
+            filename = filedialog.askopenfilename()
 #                        filetypes=[('pkl files', '*.pkl'), ('sbd files', '*.sbd'), ('all files','*.*')])
         filename=filename.strip()
         if filename:
@@ -1731,23 +1741,24 @@ class RunRT:
         self.runbtn.config(state="normal")
 
     def ReviewFiles(self):
-        self.reviewfilelist=tkFileDialog.askopenfilenames(title='Choose review files')
+        self.reviewfilelist=filedialog.askopenfilenames(title='Choose review files')
         if len(self.reviewfilelist):
             self.reviewfileindex = 0
             self.LoadFile(self.reviewfilelist[self.reviewfileindex])
+        else:
+            self.reviewfilelist = [f'RUNS{os.path.sep}{f}' for f in sorted(os.listdir('RUNS')) if f.endswith('pkl')]
 
-    def NextReviewFile(self, event):
+    def NextReviewFile(self):
         n = len(self.reviewfilelist)
         if n > 2:
             self.reviewfileindex = (self.reviewfileindex + n + 1) % n
             self.LoadFile(self.reviewfilelist[self.reviewfileindex])
 
-    def PreviousReviewFile(self, event):
+    def PreviousReviewFile(self):
         n = len(self.reviewfilelist)
         if n > 2:
             self.reviewfileindex = (self.reviewfileindex + n - 1) % n
             self.LoadFile(self.reviewfilelist[self.reviewfileindex])
-
 
     def load_flat_file(self, filename):
         '''
@@ -1783,13 +1794,13 @@ class RunRT:
         :return:
         '''
         with open(filename, 'rb') as fh:
-            sbdout = pickle.load(fh)
+            sbdout = pickle.load(fh,fix_imports=True)
             if 'COMMAND' in sbdout.keys():
                 cmd = sbdout['COMMAND']
             else:
                 print("keys in picklefile: ")
                 for k in sbdout.keys():
-                    print k
+                    print(k)
                     root.quit()
 
             self.caption.insert('1.0', cmd)
@@ -1820,7 +1831,7 @@ class RunRT:
         Write current command file to a sbd file
         :return:
         """
-        fh = tkFileDialog.asksaveasfile(mode='w', initialdir = "RUNS", defaultextension=".sbd",
+        fh = filedialog.asksaveasfile(mode='w', initialdir = "RUNS", defaultextension=".sbd",
                                         filetypes=(("sbd files", "*.sbd"), ("All files", "*.*")), title='Write File')
         if fh:
             txt = self.caption.get('1.0', 'end')
@@ -1838,7 +1849,7 @@ class RunRT:
         """
 
         if mode == 'saveas':
-            fh = tkFileDialog.asksaveasfile(mode='wb', initialdir = 'RUNS', defaultextension=".pkl",
+            fh = filedialog.asksaveasfile(mode='wb', initialdir = 'RUNS', defaultextension=".pkl",
                                             filetypes=(("pkl files", "*.pkl"), ("All files", "*.*")), title='Save File')
             self.runname = str(os.path.basename(fh.name))
             if '.' in self.runname:
@@ -1940,7 +1951,7 @@ class RunRT:
         for df in dictionaryfault:
             msg+= "{} has non-unique values and will cause a dictionary fault (see runrtdoc)\n".format(df)
 
-        for rf,fn in requiredfiles.iteritems():
+        for rf,fn in requiredfiles.items():
             if (rf in constantParms) and not os.path.isfile(fn):
                 msg+= "{} requires input file {}\n".format(rf,fn)
 
@@ -1994,8 +2005,6 @@ class RunRT:
                         parmvalues = vv.strip().split(';')
                         if not len(parmvalues) == len(set(parmvalues)):
                             dictionaryfault.append(p)
-
-
                 else:
                     constantParms.append(p)
 
@@ -2059,10 +2068,11 @@ class RunRT:
             if nlines == niter:
                 out = buf[i]
             else:
-                nl = nlines/niter
+                nl = nlines//niter       # python2->python3 issue
                 out='\n'.join(buf[i*nl:i*nl+nl])
         else:
             out = self.RunSBDART(inp)
+            out = out.decode()
         return out, lbls
 
     def RtLoops(self, **kwargs):
@@ -2076,7 +2086,7 @@ class RunRT:
         self.diffbase = ''
         self.PreviewLine('')
 
-        ingest = kwargs.has_key('ingest') and kwargs['ingest']
+        ingest = 'ingest' in kwargs and kwargs['ingest']
 
         self.sbdartoutput = ""
         cmds = self.caption.get("1.0", 'end')
@@ -2094,7 +2104,7 @@ class RunRT:
         timemark = timeit.default_timer() + reporttime
         for i in range(0, niter):
             out, lbls = self.ExecuteCmds(i, ingest)
-            self.sbdartoutput += out
+            self.sbdartoutput += str(out)
             if self.parser.IOUT == 10:
                 if len(lbls) > 0:
                     label = " ".join(sorted(lbls[1:]))
@@ -2154,7 +2164,6 @@ class RunRT:
             self.ShowFilePopup(fn)
 
 
-
 if len(sys.argv) == 1:
     root = Tk()
     my_gui = RunRT(root)
@@ -2173,7 +2182,7 @@ else:                           # if command line supplies filenames
         gi=GenInput.GenInput()
         junk, msg = gi.CycleSetup(cmds)
         if 'Error' in msg:
-            print msg
+            print(msg)
             exit(1)
 
         for i in range(0, gi.Niter()):

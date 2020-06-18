@@ -1,9 +1,7 @@
     
-                   Input documentation for SBDART (summer 2002 release)
+                   Input documentation for SBDART (2018 release)
 
-                   Paul Ricchiazzi <paul@icess.ucsb.edu>
-                   Institute for Computational Earth System Science
-                   University of California, Santa Barbara
+                   Paul Ricchiazzi <paul.ricchiazzi@gmail.com>
 
 
 This file documents input parameters for SBDART, (Santa Barbara DISORT

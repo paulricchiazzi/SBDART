@@ -1,4 +1,11 @@
-from Tkinter import Tk, Toplevel, Text, Entry, Button, Frame, PhotoImage
+try:
+    from tkinter import Tk, Toplevel, Text, Entry, Button, Frame, PhotoImage
+except:
+    from Tkinter import Tk, Toplevel, Text, Entry, Button, Frame, PhotoImage
+import sys
+from pathlib import Path
+import os
+
 
 class Docview:
 
@@ -11,9 +18,14 @@ class Docview:
         self.location = kwargs.get('location', None)
         self.wait = kwargs.get('wait', None)
         self.find = kwargs.get('find', None)
-        self.delete_img = PhotoImage(file='delete.pbm')
-        self.up_img = PhotoImage(file='1uparrow.pbm')
-        self.down_img = PhotoImage(file='1downarrow.pbm')
+
+        if getattr(sys, 'frozen', False):
+            folder = Path(sys._MEIPASS)
+        else:
+            folder = Path(__file__).parent
+        self.delete_img = PhotoImage(file=f'{folder}{os.path.sep}delete.pbm')
+        self.up_img = PhotoImage(file=f'{folder}{os.path.sep}uparrow.pbm')
+        self.down_img = PhotoImage(file=f'{folder}{os.path.sep}downarrow.pbm')
         self.upbutn = Button()
         self.dnbutn = Button()
         self.deletebutn = Button()

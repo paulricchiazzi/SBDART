@@ -52,8 +52,8 @@ class RtRestore:
                 else:
                     size = '{}GB'.format(size/1000000000)
 
-                print '{:5}   {:19}  {:>5}  {}'.format(i, date, size, filename[k])
-            print ''
+                print('{:5}   {:19}  {:>5}  {}'.format(i, date, size, filename[k]))
+            print('')
             answ = raw_input("Enter number, <Return>=get most recent, q=abort): ")
 
             if answ.isdigit() and int(answ) in range(len(filename)):

@@ -19,6 +19,28 @@ class GenInput:
 
     def GetParmMenuItems(self):
         """
+        Get the sequence of individual variant values for each nesting cycle
+        directly from rtvar command text
+        Given a cmd text such as
+                         A=0;1
+                         B=2;3
+                         C=4;5
+                         D=6
+
+        :return: [["A=0","A=1"]["B=2","B=3"],["C=4","C=5"],["D=6"]]
+        """
+        tags=[]
+        ncycles = len(self.rtvar)
+        if ncycles == 0: return tags
+        for cdict in self.rtvar:
+            k=list(cdict.keys())[0]
+            itags = ["{}={}".format(k,v) for v in cdict[k]]
+            tags.append(itags)
+        return tags
+
+
+    def GetParmMenuItems__x(self):
+        """
         Get the sequence of individual variant values for each nesting cycle directly from command text
         Given a cmd text such as
                          A=0;1
@@ -31,13 +53,9 @@ class GenInput:
         tags=[]
         ncycles = len(self.rtvar)
         if ncycles == 0: return tags
-        i=-1
-        for cdict in self.rtvar:
-            i+=1
-            k=cdict.keys()[0]
-            tags.append([])
-            for v in cdict[k]:
-                tags[i].append("{}={}".format(k,v))
+        for k,v in self.rtvar.items():
+            itag = ["{}={}".format(k,v) for v in v]
+            tags.append(itag)
         return tags
 
     def CycleSetup(self, cmd):
@@ -132,17 +150,17 @@ class GenInput:
             iter = iteration
             for nest in range(0,len(self.rtvar)):
                 if nest > 0:
-                    iter=iter/self.cycles[nest-1]
+                    iter=iter//self.cycles[nest-1]  # python2 -> python3 issue
                 i = iter % self.cycles[nest]
                 first = True
-                for p,vlist in self.rtvar[nest].iteritems():
+                for p,vlist in self.rtvar[nest].items():
                     v=vlist[i]
                     if p[0].isalpha():           # don't write output RT parm unless its legit fortran var
                         rtinp+="{}={}\n".format(p,v)
                     if first:
                         rtlist.append("{}={}".format(p,v))
                     first = False
-            for p,v in self.rtcons.iteritems():
+            for p,v in self.rtcons.items():
                 rtinp+="{}={}\n".format(p,v.split('#')[0])
 
         return rtinp,rtlist
