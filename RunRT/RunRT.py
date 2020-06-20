@@ -2141,8 +2141,8 @@ class RunRT:
         for fn in glob.glob("SBDART_WARNING*"):
             os.remove(fn)
         self.abortit=False
-        self.abortbtn.pack()
-        self.addvariant.pack_forget()
+        self.abortbtn.grid(column=0,row=1,columnspan=2)
+        self.addvariant.grid_forget()
         self.runbtn.config(state="disabled")
         if self.ValidateCommands():
 
@@ -2157,8 +2157,8 @@ class RunRT:
                 self.PreviewLine("No plots available.", justify='center')
                 self.ViewOutput()
 
-        self.abortbtn.pack_forget()
-        self.addvariant.pack()
+        self.abortbtn.grid_forget()
+        self.addvariant.grid(column=0,row=1,columnspan=2)
         self.runbtn.config(state="normal")
         for fn in glob.glob("SBDART_WARNING*"):
             self.ShowFilePopup(fn)
